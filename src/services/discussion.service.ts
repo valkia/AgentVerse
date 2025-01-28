@@ -11,6 +11,11 @@ export class DiscussionService {
   private messages: Message[] = [];
   private timeoutIds: NodeJS.Timeout[] = [];
   private events: DiscussionServiceEvents;
+  private currentTopic: string = '';
+  private currentAgents: Agent[] = [];
+  private currentSettings: DiscussionSettings | null = null;
+  private isPaused: boolean = false;
+  private lastParticipantIndex: number = -1;
 
   constructor(events: DiscussionServiceEvents) {
     this.events = events;
@@ -37,6 +42,8 @@ export class DiscussionService {
     settings: DiscussionSettings,
     participants: Agent[]
   ) {
+    if (this.isPaused) return;
+
     try {
       const summary = await aiService.generateModeratorSummary(
         topic,
@@ -49,6 +56,7 @@ export class DiscussionService {
       this.addMessage(summaryMessage);
 
       // 开始新一轮讨论
+      this.lastParticipantIndex = -1;
       participants.forEach((_, index) => {
         this.scheduleParticipantResponse(
           topic,
@@ -75,6 +83,8 @@ export class DiscussionService {
     delay: number
   ) {
     const timeoutId = setTimeout(async () => {
+      if (this.isPaused) return;
+
       const currentAgent = participants[index];
       if (!currentAgent) return;
 
@@ -88,6 +98,7 @@ export class DiscussionService {
 
         const message = this.createMessage(response, currentAgent.id, 'text');
         this.addMessage(message);
+        this.lastParticipantIndex = index;
 
         // 如果是最后一个参与者，让主持人总结
         if (index === participants.length - 1) {
@@ -111,38 +122,47 @@ export class DiscussionService {
     agents: Agent[],
     settings: DiscussionSettings
   ) {
+    this.currentTopic = topic;
+    this.currentAgents = agents;
+    this.currentSettings = settings;
+    this.isPaused = false;
+
     const moderator = agents.find(agent => agent.role === 'moderator');
     if (!moderator) {
       throw new Error('未找到主持人角色');
     }
 
     try {
-      // 主持人开场
-      const openingMessage = await aiService.generateResponse(
-        topic,
-        settings.temperature,
-        this.messages,
-        moderator
-      );
-      
-      const message = this.createMessage(openingMessage, moderator.id, 'text');
-      this.addMessage(message);
+      if (this.lastParticipantIndex === -1) {
+        // 主持人开场
+        const openingMessage = await aiService.generateResponse(
+          topic,
+          settings.temperature,
+          this.messages,
+          moderator
+        );
+        
+        const message = this.createMessage(openingMessage, moderator.id, 'text');
+        this.addMessage(message);
+      }
 
       // 让参与者轮流发言
       const participants = agents.filter(agent => 
         agent.role === 'participant' && agent.isAutoReply
       );
 
-      participants.forEach((_, index) => {
+      // 从上次暂停的位置继续
+      const startIndex = Math.max(0, this.lastParticipantIndex + 1);
+      for (let i = startIndex; i < participants.length; i++) {
         this.scheduleParticipantResponse(
           topic,
           participants,
-          index,
+          i,
           settings,
           moderator,
-          settings.interval * (index + 1)
+          settings.interval * (i - startIndex + 1)
         );
-      });
+      }
     } catch (error) {
       if (error instanceof Error) {
         this.events.onError(error);
@@ -151,11 +171,16 @@ export class DiscussionService {
   }
 
   stopDiscussion() {
+    this.isPaused = true;
     this.timeoutIds.forEach(id => clearTimeout(id));
     this.timeoutIds = [];
   }
 
   clearMessages() {
     this.messages = [];
+    this.lastParticipantIndex = -1;
+    this.currentTopic = '';
+    this.currentAgents = [];
+    this.currentSettings = null;
   }
 } 

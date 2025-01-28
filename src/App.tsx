@@ -12,7 +12,8 @@ const DEFAULT_AGENTS: Omit<Agent, "id">[] = [
   {
     name: "理性主持人",
     avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=moderator",
-    prompt: "你是一位理性、公正的主持人。你的职责是：\n1. 引导讨论方向\n2. 确保每位参与者都有发言机会\n3. 总结关键观点\n4. 在讨论偏离主题时进行适当干预",
+    prompt:
+      "你是一位理性、公正的主持人。你的职责是：\n1. 引导讨论方向\n2. 确保每位参与者都有发言机会\n3. 总结关键观点\n4. 在讨论偏离主题时进行适当干预",
     role: "moderator",
     personality: "理性、公正、严谨",
     expertise: ["主持", "引导", "总结"],
@@ -23,7 +24,8 @@ const DEFAULT_AGENTS: Omit<Agent, "id">[] = [
   {
     name: "技术专家",
     avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=tech",
-    prompt: "你是一位资深技术专家，专注于AI和机器学习领域。你应该：\n1. 从技术可行性角度分析问题\n2. 提供具体的技术实现方案\n3. 指出潜在的技术风险\n4. 关注技术发展趋势",
+    prompt:
+      "你是一位资深技术专家，专注于AI和机器学习领域。你应该：\n1. 从技术可行性角度分析问题\n2. 提供具体的技术实现方案\n3. 指出潜在的技术风险\n4. 关注技术发展趋势",
     role: "participant",
     personality: "严谨、专业、务实",
     expertise: ["人工智能", "机器学习", "软件工程"],
@@ -34,7 +36,8 @@ const DEFAULT_AGENTS: Omit<Agent, "id">[] = [
   {
     name: "伦理学者",
     avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=ethics",
-    prompt: "你是一位伦理学专家，关注AI发展的伦理问题。你应该：\n1. 评估道德和伦理影响\n2. 提出伦理准则建议\n3. 关注人权和隐私问题\n4. 平衡发展与伦理的关系",
+    prompt:
+      "你是一位伦理学专家，关注AI发展的伦理问题。你应该：\n1. 评估道德和伦理影响\n2. 提出伦理准则建议\n3. 关注人权和隐私问题\n4. 平衡发展与伦理的关系",
     role: "participant",
     personality: "谨慎、富有同理心",
     expertise: ["伦理学", "哲学", "社会学"],
@@ -45,7 +48,8 @@ const DEFAULT_AGENTS: Omit<Agent, "id">[] = [
   {
     name: "产业分析师",
     avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=analyst",
-    prompt: "你是一位资深产业分析师，专注于AI商业化应用。你应该：\n1. 分析市场趋势和商业机会\n2. 评估商业模式可行性\n3. 预测产业发展方向\n4. 关注投资价值",
+    prompt:
+      "你是一位资深产业分析师，专注于AI商业化应用。你应该：\n1. 分析市场趋势和商业机会\n2. 评估商业模式可行性\n3. 预测产业发展方向\n4. 关注投资价值",
     role: "participant",
     personality: "务实、前瞻性",
     expertise: ["市场分析", "商业战略", "投资评估"],
@@ -56,28 +60,30 @@ const DEFAULT_AGENTS: Omit<Agent, "id">[] = [
   {
     name: "社会学家",
     avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=social",
-    prompt: "你是一位社会学研究者，关注AI对社会的影响。你应该：\n1. 分析社会变革趋势\n2. 研究群体行为变化\n3. 评估社会风险\n4. 关注社会公平",
+    prompt:
+      "你是一位社会学研究者，关注AI对社会的影响。你应该：\n1. 分析社会变革趋势\n2. 研究群体行为变化\n3. 评估社会风险\n4. 关注社会公平",
     role: "participant",
     personality: "观察敏锐、同理心强",
     expertise: ["社会学", "人类学", "心理学"],
     bias: "社会公平",
     responseStyle: "全面、关注细节",
     isAutoReply: true,
-  }
+  },
 ];
 
 function App() {
   const [agents, setAgents] = useState<Agent[]>(
-    DEFAULT_AGENTS.map(agent => ({
+    DEFAULT_AGENTS.map((agent) => ({
       ...agent,
-      id: nanoid()
+      id: nanoid(),
     }))
   );
   const [messages, setMessages] = useState<Message[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | undefined>();
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [discussionStatus, setDiscussionStatus] = useState<Discussion["status"]>("paused");
+  const [discussionStatus, setDiscussionStatus] =
+    useState<Discussion["status"]>("paused");
   const [settings, setSettings] = useState<DiscussionSettings>({
     maxRounds: 5,
     temperature: 0.7,
@@ -87,23 +93,45 @@ function App() {
     allowConflict: true,
   });
 
-  const handleAddAgent = (agentData: Omit<Agent, "id">) => {
-    const newAgent: Agent = {
-      ...agentData,
+  const handleAddAgent = () => {
+    const newAgent: Omit<Agent, "id"> = {
+      name: `新成员 ${agents.length + 1}`,
+      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${Date.now()}`,
+      prompt: "请在编辑时设置该成员的具体职责和行为方式。",
+      role: "participant",
+      personality: "待设置",
+      expertise: [],
+      bias: "待设置",
+      responseStyle: "待设置",
+      isAutoReply: true,
+    };
+
+    const agentWithId = {
+      ...newAgent,
       id: nanoid(),
     };
-    setAgents([...agents, newAgent]);
+
+    setAgents((prev) => [agentWithId, ...prev]);
   };
 
-  const handleEditAgent = (agentData: Omit<Agent, "id">) => {
+  const handleAgentSubmit = (agentData: Omit<Agent, "id">) => {
     if (editingAgent) {
+      // 更新现有代理
       setAgents(
         agents.map((agent) =>
-          agent.id === editingAgent.id ? { ...agentData, id: agent.id } : agent
+          agent.id === editingAgent.id ? { ...agent, ...agentData } : agent
         )
       );
-      setEditingAgent(undefined);
+    } else {
+      // 创建新代理
+      const newAgent: Agent = {
+        ...agentData,
+        id: nanoid(),
+      };
+      setAgents([...agents, newAgent]);
     }
+    setEditingAgent(undefined);
+    setIsFormOpen(false);
   };
 
   const handleDeleteAgent = (agentId: string) => {
@@ -144,10 +172,12 @@ function App() {
   };
 
   return (
-    <div className={cn(
-      "h-full flex flex-col",
-      isDarkMode ? "dark bg-gray-900" : "bg-gray-50"
-    )}>
+    <div
+      className={cn(
+        "h-full flex flex-col",
+        isDarkMode ? "dark bg-gray-900" : "bg-gray-50"
+      )}
+    >
       <div className="flex-1 container mx-auto p-4 max-w-[1920px] flex flex-col">
         <header className="flex-none py-4 flex justify-between items-center">
           <div>
@@ -171,7 +201,7 @@ function App() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 h-full flex flex-col">
               <AgentList
                 agents={agents}
-                onAddAgent={() => setIsFormOpen(true)}
+                onAddAgent={handleAddAgent}
                 onEditAgent={(agent) => {
                   setEditingAgent(agent);
                   setIsFormOpen(true);
@@ -193,12 +223,14 @@ function App() {
                 onStatusChange={setDiscussionStatus}
               />
             </div>
-            
+
             <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
               <ChatArea
                 messages={messages}
                 agents={agents}
-                onSendMessage={(content, agentId) => handleSendMessage(content, agentId)}
+                onSendMessage={(content, agentId) =>
+                  handleSendMessage(content, agentId)
+                }
                 getAgentName={getAgentName}
                 getAgentAvatar={getAgentAvatar}
               />
@@ -210,7 +242,7 @@ function App() {
       <AgentForm
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
-        onSubmit={editingAgent ? handleEditAgent : handleAddAgent}
+        onSubmit={handleAgentSubmit}
         initialData={editingAgent}
       />
     </div>

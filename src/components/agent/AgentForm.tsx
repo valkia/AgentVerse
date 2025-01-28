@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Agent } from "@/types/agent";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +40,22 @@ export function AgentForm({ open, onOpenChange, onSubmit, initialData }: AgentFo
     isAutoReply: initialData?.isAutoReply || true,
   });
 
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name,
+        avatar: initialData.avatar,
+        prompt: initialData.prompt,
+        role: initialData.role,
+        personality: initialData.personality,
+        expertise: initialData.expertise,
+        bias: initialData.bias,
+        responseStyle: initialData.responseStyle,
+        isAutoReply: initialData.isAutoReply,
+      });
+    }
+  }, [initialData]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
@@ -52,13 +68,13 @@ export function AgentForm({ open, onOpenChange, onSubmit, initialData }: AgentFo
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>
-              {initialData ? "编辑讨论员" : "添加讨论员"}
+              {initialData ? "编辑讨论员" : "完善讨论员信息"}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
-                名称
+                名称 <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="name"
@@ -67,6 +83,7 @@ export function AgentForm({ open, onOpenChange, onSubmit, initialData }: AgentFo
                   setFormData({ ...formData, name: e.target.value })
                 }
                 className="col-span-3"
+                required
               />
             </div>
             
@@ -198,7 +215,15 @@ export function AgentForm({ open, onOpenChange, onSubmit, initialData }: AgentFo
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">保存</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              取消
+            </Button>
+            <Button 
+              type="submit"
+              disabled={!formData.name.trim() || !formData.prompt.trim()}
+            >
+              保存
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
