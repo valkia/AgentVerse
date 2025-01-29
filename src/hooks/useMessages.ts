@@ -6,7 +6,7 @@ export function useMessages() {
   const [messages, setMessages] = useState<Message[]>([]);
 
   const addMessage = useCallback(
-    (content: string, agentId: string, type: Message["type"] = "text", replyTo?: string) => {
+    async (content: string, agentId: string, type: Message["type"] = "text", replyTo?: string) => {
       const newMessage: Message = {
         id: nanoid(),
         agentId,

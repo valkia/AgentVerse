@@ -1,4 +1,4 @@
-import { RefObject, useRef, useEffect } from 'react';
+import { RefObject, useRef, useEffect } from "react";
 
 interface AutoScrollOptions {
   autoScrollMode?: "always" | "smart" | "none";
@@ -11,19 +11,20 @@ export function useAutoScroll(
   content: unknown,
   options: AutoScrollOptions = {}
 ) {
-  const { 
+  const {
     autoScrollMode = "smart",
     bottomThreshold = 100,
-    smoothScrollThreshold = 1000 // 默认 1000px
+    smoothScrollThreshold = 1000, // 默认 1000px
   } = options;
 
   const isNearBottomRef = useRef(true);
   const prevContentRef = useRef(content);
+  // console.log("isNearBottomRef", isNearBottomRef.current);
 
   const checkIfNearBottom = () => {
     const container = containerRef.current;
     if (!container) return false;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = container;
     const distanceToBottom = scrollHeight - scrollTop - clientHeight;
     return distanceToBottom <= bottomThreshold;
@@ -32,16 +33,17 @@ export function useAutoScroll(
   const scrollToBottom = (instant?: boolean) => {
     const container = containerRef.current;
     if (!container) return;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = container;
     const distanceToBottom = scrollHeight - scrollTop - clientHeight;
 
     // 如果滚动距离超过阈值，或者指定了 instant，就使用即时滚动
-    const shouldUseInstant = instant || distanceToBottom > smoothScrollThreshold;
-    
+    const shouldUseInstant =
+      instant || distanceToBottom > smoothScrollThreshold;
+
     container.scrollTo({
       top: container.scrollHeight,
-      behavior: shouldUseInstant ? "auto" : "smooth"
+      behavior: shouldUseInstant ? "auto" : "smooth",
     });
   };
 
@@ -55,6 +57,10 @@ export function useAutoScroll(
         scrollToBottom();
         break;
       case "smart":
+        console.log(
+          "[useAutoScroll] get isNearBottomRef",
+          isNearBottomRef.current
+        );
         if (isNearBottomRef.current) {
           scrollToBottom();
         }
@@ -62,11 +68,10 @@ export function useAutoScroll(
     }
   }, [content, autoScrollMode]);
 
+  isNearBottomRef.current = checkIfNearBottom();
+
   return {
     isNearBottom: isNearBottomRef.current,
-    updateIsNearBottom: () => {
-      isNearBottomRef.current = checkIfNearBottom();
-    },
-    scrollToBottom
+    scrollToBottom,
   };
-} 
+}

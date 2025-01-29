@@ -1,12 +1,14 @@
-import { Message } from "@/types/agent";
-import { ScrollableLayout } from "@/layouts/ScrollableLayout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Markdown } from "@/components/ui/markdown";
-import { cn } from "@/lib/utils";
-import { useRef, useImperativeHandle, forwardRef, useState } from "react";
-import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { Button } from "@/components/ui/button";
+import { Markdown } from "@/components/ui/markdown";
+import {
+  ScrollableLayout,
+  ScrollableLayoutRef,
+} from "@/layouts/ScrollableLayout";
+import { cn } from "@/lib/utils";
+import { Message } from "@/types/agent";
 import { ArrowDown } from "lucide-react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 
 interface MessageItemProps {
   message: Message;
@@ -18,7 +20,7 @@ interface MessageItemProps {
 
 function MessageItem({ message, agentInfo }: MessageItemProps) {
   const { getName, getAvatar } = agentInfo;
-  
+
   return (
     <div className="group animate-fadeIn">
       <div className="flex items-start gap-3">
@@ -61,33 +63,34 @@ export type MessageListRef = {
 };
 
 export const MessageList = forwardRef<MessageListRef, MessageListProps>(
-  function MessageList({ 
-    messages, 
-    agentInfo, 
-    className,
-    scrollButtonThreshold = 300 // 默认 200px
-  }, ref) {
-    const containerRef = useRef<HTMLDivElement>(null);
+  function MessageList(
+    {
+      messages,
+      agentInfo,
+      className,
+      scrollButtonThreshold = 200, // 默认 200px
+    },
+    ref
+  ) {
+    const scrollableLayoutRef = useRef<ScrollableLayoutRef>(null);
     const [showScrollButton, setShowScrollButton] = useState(false);
 
-    const { scrollToBottom } = useAutoScroll(containerRef, messages, {
-      autoScrollMode: "smart"
-    });
+    useImperativeHandle(ref, () => ({
+      scrollToBottom: () => scrollableLayoutRef.current?.scrollToBottom(),
+    }));
 
     const handleScroll = (scrollTop: number, maxScroll: number) => {
       const distanceToBottom = maxScroll - scrollTop;
-      setShowScrollButton(maxScroll > 0 && distanceToBottom > scrollButtonThreshold);
+      setShowScrollButton(
+        maxScroll > 0 && distanceToBottom > scrollButtonThreshold
+      );
     };
-
-    useImperativeHandle(ref, () => ({
-      scrollToBottom
-    }));
 
     return (
       <div className="relative h-full">
         <div className="absolute inset-0">
           <ScrollableLayout
-            ref={containerRef}
+            ref={scrollableLayoutRef}
             className={cn("h-full", className)}
             initialAlignment="bottom"
             autoScrollMode="smart"
@@ -111,7 +114,7 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
             variant="outline"
             size="icon"
             className="absolute right-4 bottom-4 rounded-full shadow-lg bg-background/80 backdrop-blur hover:bg-background z-10"
-            onClick={() => scrollToBottom()}
+            onClick={() => scrollableLayoutRef.current?.scrollToBottom()}
           >
             <ArrowDown className="h-4 w-4" />
           </Button>
@@ -119,4 +122,4 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
       </div>
     );
   }
-); 
+);
