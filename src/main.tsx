@@ -1,10 +1,14 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "./styles/globals.css";
-import { App } from "./App.tsx";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { Suspense } from 'react'
+import ReactDOM from 'react-dom/client'
+import { App } from './App.tsx'
+import './index.css'
+import { AppLoading } from './components/app/AppLoading.tsx'
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <Suspense fallback={<AppLoading />}>
+      <App />
+    </Suspense>
+  </React.StrictMode>,
+)

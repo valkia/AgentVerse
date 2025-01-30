@@ -1,11 +1,12 @@
 import { Agent } from "@/types/agent";
 import { AgentCard } from "./AgentCard";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AgentListProps {
   agents: Agent[];
+  loading?: boolean;
   onAddAgent: () => void;
   onEditAgent: (agent: Agent) => void;
   onDeleteAgent: (agentId: string) => void;
@@ -17,6 +18,7 @@ interface AgentListProps {
 
 export function AgentList({
   agents,
+  loading,
   onAddAgent,
   onEditAgent,
   onDeleteAgent,
@@ -32,14 +34,18 @@ export function AgentList({
         headerClassName
       )}>
         <h2 className="text-xl font-semibold text-foreground">讨论成员</h2>
-        <Button onClick={onAddAgent} variant="secondary" size="sm">
-          <PlusCircle className="w-4 h-4 mr-1.5" />
+        <Button onClick={onAddAgent} variant="secondary" size="sm" disabled={loading}>
+          {loading ? (
+            <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+          ) : (
+            <PlusCircle className="w-4 h-4 mr-1.5" />
+          )}
           添加成员
         </Button>
       </header>
 
       <div className={cn(
-        "flex-1 min-h-0 overflow-y-auto -mx-2 px-2",
+        "flex-1 min-h-0 overflow-y-auto -mx-2 px-2 relative",
         listClassName
       )}>
         <div className="space-y-2.5 pb-4">
@@ -53,6 +59,11 @@ export function AgentList({
             />
           ))}
         </div>
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        )}
       </div>
     </div>
   );

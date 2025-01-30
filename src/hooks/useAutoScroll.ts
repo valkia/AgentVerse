@@ -19,7 +19,6 @@ export function useAutoScroll(
 
   const isNearBottomRef = useRef(true);
   const prevContentRef = useRef(content);
-  // console.log("isNearBottomRef", isNearBottomRef.current);
 
   const checkIfNearBottom = () => {
     const container = containerRef.current;
@@ -58,7 +57,6 @@ export function useAutoScroll(
         break;
       case "smart":
         console.log(
-          "[useAutoScroll] get isNearBottomRef",
           isNearBottomRef.current
         );
         if (isNearBottomRef.current) {

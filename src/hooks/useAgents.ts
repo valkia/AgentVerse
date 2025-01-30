@@ -1,62 +1,72 @@
-import { useState, useCallback } from "react";
+import { agentsResource } from "@/resources";
+import { agentService } from "@/services/agent.service";
 import { Agent } from "@/types/agent";
-import { nanoid } from "nanoid";
-import { DEFAULT_AGENTS } from "@/config/agents";
+import { useMemoizedFn } from "ahooks";
+import { useState } from "react";
+import { useRequest } from "./useRequest";
 
-export function useAgents() {
-  const [agents, setAgents] = useState<Agent[]>(
-    DEFAULT_AGENTS.map((agent) => ({
-      ...agent,
-      id: nanoid(),
-    }))
-  );
+interface UseAgentsProps {
+  onChange?: (agents: Agent[]) => void;
+}
 
-  const addAgent = useCallback(() => {
-    const newAgent: Omit<Agent, "id"> = {
-      name: `新成员 ${agents.length + 1}`,
-      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${Date.now()}`,
-      prompt: "请在编辑时设置该成员的具体职责和行为方式。",
-      role: "participant",
-      personality: "待设置",
-      expertise: [],
-      bias: "待设置",
-      responseStyle: "待设置",
-      isAutoReply: true,
-    };
+export function useAgents({ onChange }: UseAgentsProps = {}) {
+  const initialAgents = agentsResource.list.read();
+  const [agents, setAgents] = useState<Agent[]>(initialAgents);
+  const { loading, error, withLoading } = useRequest({
+    // 对于列表数据，我们可以设置更短的防抖时间
+    debounceTime: 500,
+    minLoadingTime: 300,
+  });
 
-    setAgents((prev) => [{ ...newAgent, id: nanoid() }, ...prev]);
-  }, [agents.length]);
+  const updateAgentsWithCallback = useMemoizedFn((newAgents: Agent[]) => {
+    setAgents(newAgents);
+    onChange?.(newAgents);
+  });
 
-  const updateAgent = useCallback((agentId: string, agentData: Partial<Omit<Agent, "id">>) => {
-    setAgents((prev) =>
-      prev.map((agent) =>
-        agent.id === agentId ? { ...agent, ...agentData } : agent
-      )
+  const refreshAgents = useMemoizedFn(() => {
+    return agentService.listAgents().then((data) => {
+      updateAgentsWithCallback(data);
+      return data;
+    });
+  });
+
+  const addAgent = useMemoizedFn(() => {
+    const newAgent = agentService.createDefaultAgent();
+    return withLoading(
+      agentService.createAgent(newAgent).then(() => refreshAgents())
     );
-  }, []);
+  });
 
-  const deleteAgent = useCallback((agentId: string) => {
-    setAgents((prev) => prev.filter((agent) => agent.id !== agentId));
-  }, []);
-
-  const toggleAutoReply = useCallback((agentId: string, isAutoReply: boolean) => {
-    setAgents((prev) =>
-      prev.map((agent) =>
-        agent.id === agentId ? { ...agent, isAutoReply } : agent
-      )
+  const updateAgent = useMemoizedFn((id: string, data: Partial<Agent>) => {
+    return withLoading(
+      agentService.updateAgent(id, data).then(() => refreshAgents())
     );
-  }, []);
+  });
 
-  const getAgentName = useCallback((agentId: string) => {
-    return agents.find((agent) => agent.id === agentId)?.name || "未知";
-  }, [agents]);
+  const deleteAgent = useMemoizedFn((id: string) => {
+    return withLoading(
+      agentService.deleteAgent(id).then(() => refreshAgents())
+    );
+  });
 
-  const getAgentAvatar = useCallback((agentId: string) => {
-    return agents.find((agent) => agent.id === agentId)?.avatar || "";
-  }, [agents]);
+  const toggleAutoReply = useMemoizedFn((id: string, isAutoReply: boolean) => {
+    return withLoading(
+      agentService.toggleAutoReply(id, isAutoReply).then(() => refreshAgents())
+    );
+  });
+
+  const getAgentName = useMemoizedFn((id: string) => {
+    return agents.find((agent) => agent.id === id)?.name || "未知";
+  });
+
+  const getAgentAvatar = useMemoizedFn((id: string) => {
+    return agents.find((agent) => agent.id === id)?.avatar || "";
+  });
 
   return {
     agents,
+    loading,
+    error,
     addAgent,
     updateAgent,
     deleteAgent,
@@ -64,4 +74,4 @@ export function useAgents() {
     getAgentName,
     getAgentAvatar,
   };
-} 
+}

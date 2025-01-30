@@ -68,6 +68,7 @@ export function App() {
   const { isDarkMode, toggleDarkMode, rootClassName } = useTheme();
   const {
     agents,
+    loading,
     addAgent,
     updateAgent,
     deleteAgent,
@@ -100,6 +101,7 @@ export function App() {
             <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col min-h-0 p-6">
               <AgentList
                 agents={agents}
+                loading={loading}
                 onAddAgent={addAgent}
                 onEditAgent={handleEditAgent}
                 onDeleteAgent={deleteAgent}

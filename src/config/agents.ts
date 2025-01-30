@@ -23,7 +23,7 @@ export const DEFAULT_AGENTS: Omit<Agent, "id">[] = [
     expertise: ["人工智能", "机器学习", "软件工程"],
     bias: "技术导向",
     responseStyle: "专业、详细",
-    isAutoReply: true,
+    isAutoReply: false,
   },
   {
     name: "伦理学者",
@@ -35,7 +35,7 @@ export const DEFAULT_AGENTS: Omit<Agent, "id">[] = [
     expertise: ["伦理学", "哲学", "社会学"],
     bias: "伦理导向",
     responseStyle: "深思熟虑、关注人文",
-    isAutoReply: true,
+    isAutoReply: false,
   },
   {
     name: "产业分析师",
@@ -47,7 +47,7 @@ export const DEFAULT_AGENTS: Omit<Agent, "id">[] = [
     expertise: ["市场分析", "商业战略", "投资评估"],
     bias: "市场导向",
     responseStyle: "数据驱动、重视实效",
-    isAutoReply: true,
+    isAutoReply: false,
   },
   {
     name: "社会学家",
@@ -59,6 +59,6 @@ export const DEFAULT_AGENTS: Omit<Agent, "id">[] = [
     expertise: ["社会学", "人类学", "心理学"],
     bias: "社会公平",
     responseStyle: "全面、关注细节",
-    isAutoReply: true,
+    isAutoReply: false,
   },
 ]; 
