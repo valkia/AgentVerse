@@ -1,24 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from "react";
 
 export interface ResourceState<T> {
   data: T | null;
-  loading: boolean;
+  isLoading: boolean; // 初始加载状态
+  isValidating: boolean; // 刷新状态
   error: Error | null;
+  mutate: (
+    dataOrMutator?:
+      | T
+      | null
+      | ((prev: T | null) => T | null | Promise<T | null>),
+    shouldRevalidate?: boolean
+  ) => Promise<void>;
 }
 
-export interface ResourceOptions {
-  minLoadingTime?: number;  // 最小加载时间
-  retryTimes?: number;      // 重试次数
-  retryDelay?: number;      // 重试延迟
+// 添加一个新的类型，用于 read() 返回的状态
+export interface ReadyResourceState<T> extends Omit<ResourceState<T>, "data"> {
+  data: T; // 这里的 data 一定有值
+}
+
+export interface ResourceOptions<T> {
+  minLoadingTime?: number; // 最小加载时间
+  retryTimes?: number; // 重试次数
+  retryDelay?: number; // 重试延迟
+  onCreated?: (resource: ResourceManagerImpl<T>) => void; // 资源创建后的回调
 }
 
 export interface IResourceManager<T> {
-  read(): T;
-  reload(promise: Promise<T>): void;
+  read(): ReadyResourceState<T>;
+  reload(): Promise<T>;
 }
 
-const DEFAULT_OPTIONS: ResourceOptions = {
-  minLoadingTime: 600,    // 默认最小加载时间600ms
+const DEFAULT_OPTIONS: ResourceOptions<unknown> = {
+  minLoadingTime: 0, // 默认最小加载时间600ms
   retryTimes: 3,
   retryDelay: 1000,
 };
@@ -26,18 +40,22 @@ const DEFAULT_OPTIONS: ResourceOptions = {
 export class ResourceManagerImpl<T> implements IResourceManager<T> {
   private state: ResourceState<T> = {
     data: null,
-    loading: true,
+    isLoading: true,
+    isValidating: false,
     error: null,
+    mutate: this.mutate.bind(this),
   };
   private listeners: Set<(state: ResourceState<T>) => void> = new Set();
   private loadStartTime: number = 0;
-  private options: ResourceOptions;
+  private options: ResourceOptions<T>;
+  private promise: Promise<T>;
 
   constructor(
-    private promise: Promise<T>,
-    options: ResourceOptions = {}
+    private fetcher: () => Promise<T>,
+    options: ResourceOptions<T> = {} as ResourceOptions<T>
   ) {
-    this.options = { ...DEFAULT_OPTIONS, ...options };
+    this.options = { ...(DEFAULT_OPTIONS as ResourceOptions<T>), ...options };
+    this.promise = this.fetcher();
     this.initialize();
   }
 
@@ -45,22 +63,33 @@ export class ResourceManagerImpl<T> implements IResourceManager<T> {
     this.loadStartTime = Date.now();
     this.promise
       .then(async (data) => {
-        // 确保最小加载时间
         const elapsed = Date.now() - this.loadStartTime;
         const minTime = this.options.minLoadingTime || 0;
         if (elapsed < minTime) {
-          await new Promise(resolve => setTimeout(resolve, minTime - elapsed));
+          await new Promise((resolve) =>
+            setTimeout(resolve, minTime - elapsed)
+          );
         }
-        this.setState({ data, loading: false, error: null });
+        this.setState({
+          data,
+          isLoading: false,
+          isValidating: false,
+          error: null,
+        });
       })
-      .catch(error => {
-        this.setState({ data: null, loading: false, error });
+      .catch((error) => {
+        this.setState({
+          data: null,
+          isLoading: false,
+          isValidating: false,
+          error,
+        });
       });
   }
 
-  private setState(newState: Partial<ResourceState<T>>) {
+  private setState(newState: Partial<Omit<ResourceState<T>, "mutate">>) {
     this.state = { ...this.state, ...newState };
-    this.listeners.forEach(listener => listener(this.state));
+    this.listeners.forEach((listener) => listener(this.state));
   }
 
   subscribe(listener: (state: ResourceState<T>) => void) {
@@ -71,41 +100,123 @@ export class ResourceManagerImpl<T> implements IResourceManager<T> {
     };
   }
 
-  read(): T {
+  read(): ReadyResourceState<T> {
     if (this.state.error) {
       throw this.state.error;
     }
-    if (this.state.loading || !this.state.data) {
+    if (this.state.isLoading) {
       throw this.promise;
     }
-    return this.state.data;
+    // 这里我们知道 data 一定不是 null
+    return this.state as ReadyResourceState<T>;
   }
 
   getState(): ResourceState<T> {
     return this.state;
   }
 
-  reload(promise: Promise<T>) {
-    this.promise = promise;
-    this.setState({ loading: true, error: null });
-    this.initialize();
+  reload(): Promise<T> {
+    this.setState({ isValidating: true, error: null });
+    this.loadStartTime = Date.now();
+    // 创建新的 promise 用于 Suspense
+    this.promise = this.fetcher();
+    return this.promise
+      .then(async (data) => {
+        const elapsed = Date.now() - this.loadStartTime;
+        const minTime = this.options.minLoadingTime || 0;
+        if (elapsed < minTime) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, minTime - elapsed)
+          );
+        }
+        this.setState({ data, isValidating: false, error: null });
+        return data;
+      })
+      .catch((error) => {
+        this.setState({ isValidating: false, error });
+        throw error;
+      });
+  }
+
+  async mutate(
+    dataOrMutator?:
+      | T
+      | null
+      | ((prev: T | null) => T | null | Promise<T | null>),
+    shouldRevalidate: boolean = true
+  ): Promise<void> {
+    // 如果没有传入数据或函数，直接重新验证
+    if (dataOrMutator === undefined) {
+      await this.reload();
+      return;
+    }
+
+    // 处理数据更新
+    if (typeof dataOrMutator === "function") {
+      const mutatorFn = dataOrMutator as (
+        prev: T | null
+      ) => T | null | Promise<T | null>;
+      const newData = await mutatorFn(this.state.data);
+      this.setState({ data: newData });
+    } else {
+      this.setState({ data: dataOrMutator });
+    }
+
+    // 如果需要重新验证
+    if (shouldRevalidate) {
+      await this.reload();
+    }
   }
 }
 
 // React Hook
-export function useResource<T>(resource: ResourceManagerImpl<T>): ResourceState<T> {
-  const [state, setState] = useState<ResourceState<T>>(resource.getState());
+export function useResourceState<T>(
+  resource: ResourceManagerImpl<T>
+): ReadyResourceState<T> {
+  const [state, setState] = useState<ResourceState<T>>(() => resource.read());
 
   useEffect(() => {
-    return resource.subscribe(setState);
+    return resource.subscribe((newState) => {
+      // 只有当数据准备好时才更新状态
+      if (!newState.isLoading && !newState.isValidating && !newState.error) {
+        setState(newState as ReadyResourceState<T>);
+      }
+    });
   }, [resource]);
 
-  return state;
+  return state as ReadyResourceState<T>;
 }
 
 export function createResource<T>(
-  promise: Promise<T>,
-  options?: ResourceOptions
+  fetcher: () => Promise<T>,
+  options?: ResourceOptions<T>
 ): ResourceManagerImpl<T> {
-  return new ResourceManagerImpl(promise, options);
-} 
+  const resource = new ResourceManagerImpl(fetcher, options);
+  options?.onCreated?.(resource);
+  return resource;
+}
+
+/**
+ * 用于处理参数化资源的钩子
+ * @param resourceFactory 资源工厂函数
+ * @param params 资源参数
+ * @param fallback 当参数为空时的默认值
+ */
+export function useParameterizedResource<T, P>(
+  resourceFactory: (params: P) => ResourceManagerImpl<T>,
+  params: P | null,
+  fallback: T | (() => T)
+): ReadyResourceState<T> {
+  // 创建一个 memo 化的资源实例
+  const resource = useMemo(() => {
+    if (!params) {
+      // 当参数为空时，创建一个返回默认值的资源
+      const fallbackValue = typeof fallback === 'function' ? (fallback as () => T)() : fallback;
+      return createResource<T>(() => Promise.resolve(fallbackValue));
+    }
+    return resourceFactory(params);
+  }, [params]); // 仅在参数变化时重新创建
+
+  // 使用现有的 useResourceState 来管理状态
+  return useResourceState(resource);
+}

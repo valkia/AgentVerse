@@ -1,4 +1,4 @@
-import { DiscussionSettings } from "@/types/agent";
+import { DiscussionSettings } from "@/types/discussion";
 
 export const DEFAULT_SETTINGS: DiscussionSettings = {
   maxRounds: 5,

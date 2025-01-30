@@ -1,22 +1,23 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Agent, Discussion, DiscussionSettings, Message } from '@/types/agent';
-import { PauseCircle, PlayCircle, Settings2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { DiscussionService } from '@/services/discussion.service';
-import { cn } from '@/lib/utils';
-import { SettingSlider } from './SettingSlider';
-import { SettingSelect } from './SettingSelect';
-import { SettingSwitch } from './SettingSwitch';
+import { Button } from "@/components/ui/button";
+import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
+import { cn } from "@/lib/utils";
+import { discussionControlService } from "@/services/discussion-control.service";
+import { Discussion, DiscussionSettings, Message } from "@/types/discussion";
+import { PauseCircle, PlayCircle, Settings2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useProxyBeanState } from "rx-nested-bean";
+import { SettingSelect } from "./SettingSelect";
+import { SettingSlider } from "./SettingSlider";
+import { SettingSwitch } from "./SettingSwitch";
 
-type ModerationStyle = 'strict' | 'relaxed';
+type ModerationStyle = "strict" | "relaxed";
 
 const MODERATION_STYLE_OPTIONS: Array<{
   value: ModerationStyle;
   label: string;
 }> = [
-  { value: 'strict', label: '严格' },
-  { value: 'relaxed', label: '宽松' }
+  { value: "strict", label: "严格" },
+  { value: "relaxed", label: "宽松" },
 ];
 
 interface SettingsPanelProps {
@@ -38,7 +39,7 @@ function SettingsPanel({ settings, onSettingsChange }: SettingsPanelProps) {
         label="回复间隔"
         description="每个Agent之间的回复间隔时间"
         value={settings.interval / 1000}
-        onChange={(value) => updateSetting('interval', value * 1000)}
+        onChange={(value) => updateSetting("interval", value * 1000)}
         min={1}
         max={30}
         step={1}
@@ -49,7 +50,7 @@ function SettingsPanel({ settings, onSettingsChange }: SettingsPanelProps) {
         label="随机性"
         description="回复内容的创造性和多样性"
         value={settings.temperature}
-        onChange={(value) => updateSetting('temperature', value)}
+        onChange={(value) => updateSetting("temperature", value)}
         min={0}
         max={1}
         step={0.1}
@@ -60,7 +61,7 @@ function SettingsPanel({ settings, onSettingsChange }: SettingsPanelProps) {
         label="主持风格"
         description="主持人引导讨论的方式"
         value={settings.moderationStyle}
-        onChange={(value) => updateSetting('moderationStyle', value)}
+        onChange={(value) => updateSetting("moderationStyle", value)}
         options={MODERATION_STYLE_OPTIONS}
       />
 
@@ -68,83 +69,77 @@ function SettingsPanel({ settings, onSettingsChange }: SettingsPanelProps) {
         label="允许冲突"
         description="是否允许参与者之间产生分歧"
         checked={settings.allowConflict}
-        onCheckedChange={(checked) => updateSetting('allowConflict', checked)}
+        onCheckedChange={(checked) => updateSetting("allowConflict", checked)}
       />
     </div>
   );
 }
 
 interface DiscussionControllerProps {
-  agents: Agent[];
-  status: Discussion['status'];
-  settings: DiscussionSettings;
-  onStatusChange: (status: Discussion['status']) => void;
-  onSettingsChange: (settings: DiscussionSettings) => void;
-  onSendMessage: (content: string, agentId: string, type: Message['type'], replyTo?: string) => void;
+  topic?: string;
+  status: Discussion["status"];
+  onStatusChange: (status: Discussion["status"]) => void;
+  onSendMessage: (
+    content: string,
+    agentId: string,
+    type: Message["type"],
+    replyTo?: string
+  ) => void;
 }
 
 export function DiscussionController({
-  agents,
+  topic,
   status,
-  settings,
   onStatusChange,
-  onSettingsChange,
   onSendMessage,
 }: DiscussionControllerProps) {
-  const [topic, setTopic] = useState('');
   const [showSettings, setShowSettings] = useState(false);
-  const discussionServiceRef = useRef<DiscussionService>();
+  const { data: settings, set: setSettings } = useProxyBeanState(
+    discussionControlService.store,
+    "settings"
+  );
+  const { members } = useDiscussionMembers();
 
   useEffect(() => {
-    discussionServiceRef.current = new DiscussionService({
-      onMessage: (message: Message) => {
-        try {
-          onSendMessage(message.content, message.agentId, message.type);
-        } catch (error) {
-          console.error('消息处理错误:', error);
-        }
-      },
-      onError: (error: Error) => {
-        console.error('讨论服务错误:', error);
-        onStatusChange('paused');
+    if (status === "active" && topic) {
+      const activeMembers = members.filter(m => m.isAutoReply);
+      if (activeMembers.length > 0) {
+        discussionControlService.startDiscussion(topic, activeMembers);
       }
-    });
+    } else {
+      discussionControlService.stopDiscussion();
+    }
+  }, [status, topic, members]);
 
-    return () => discussionServiceRef.current?.stopDiscussion();
-  }, []);
+  useEffect(()=>{
+    return ()=>{
+      discussionControlService.stopDiscussion();
+    }
+  },[])
 
   useEffect(() => {
-    const service = discussionServiceRef.current;
-    if (!service) return;
-
-    const trimmedTopic = topic.trim();
-    if (status === 'active' && trimmedTopic) {
-      service.startDiscussion(trimmedTopic, agents, settings);
-    } else {
-      service.stopDiscussion();
-    }
-  }, [status, topic, agents, settings]);
+    return discussionControlService.onMessage$.listen((message) => {
+      onSendMessage(message.content, message.agentId, message.type);
+    });
+  }, [onSendMessage]);
 
   const handleStatusChange = () => {
-    const trimmedTopic = topic.trim();
-    if (!trimmedTopic && status === 'paused') {
-      alert('请先输入讨论主题');
-      return;
+    if (status === "active") {
+      onStatusChange("paused");
+    } else if (topic) {
+      onStatusChange("active");
     }
-    onStatusChange(status === 'active' ? 'paused' : 'active');
   };
 
-  const isActive = status === 'active';
-  const trimmedTopic = topic.trim();
+  const isActive = status === "active";
 
   return (
     <div className="space-y-4">
       <div className="flex gap-4">
         <Button
           onClick={handleStatusChange}
-          variant={isActive ? 'destructive' : 'default'}
+          variant={isActive ? "destructive" : "default"}
           size="icon"
-          disabled={!trimmedTopic && status === 'paused'}
           className="shrink-0"
         >
           {isActive ? (
@@ -153,17 +148,6 @@ export function DiscussionController({
             <PlayCircle className="w-5 h-5" />
           )}
         </Button>
-
-        <Input
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          placeholder="输入讨论主题，例如：'人工智能对未来教育的影响'"
-          className={cn(
-            "font-medium transition-all flex-1",
-            isActive && "bg-muted"
-          )}
-          disabled={isActive}
-        />
 
         <Button
           variant="ghost"
@@ -178,7 +162,12 @@ export function DiscussionController({
         </Button>
       </div>
 
-      {showSettings && <SettingsPanel settings={settings} onSettingsChange={onSettingsChange} />}
+      {showSettings && (
+        <SettingsPanel
+          settings={settings}
+          onSettingsChange={setSettings}
+        />
+      )}
     </div>
   );
-} 
+}

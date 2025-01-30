@@ -1,14 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { Suspense } from 'react'
-import ReactDOM from 'react-dom/client'
-import { App } from './App.tsx'
-import './index.css'
-import { AppLoading } from './components/app/AppLoading.tsx'
+import { discussionService } from "@/services/discussion.service.ts";
+import React, { Suspense } from "react";
+import ReactDOM from "react-dom/client";
+import { App } from "./App.tsx";
+import { AppLoading } from "./components/app/AppLoading.tsx";
+import "./index.css";
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+(window as any).discussionService = discussionService;
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Suspense fallback={<AppLoading />}>
       <App />
     </Suspense>
-  </React.StrictMode>,
-)
+  </React.StrictMode>
+);

@@ -1,27 +1,43 @@
-import { useState, useCallback } from "react";
-import { Message } from "@/types/agent";
-import { nanoid } from "nanoid";
+import { Message } from "@/types/discussion";
+import { messagesResource } from "@/resources";
+import { messageService } from "@/services/message.service";
+import { useResourceState } from "@/lib/resource";
+import { useMemoizedFn } from "ahooks";
+import { discussionControlService } from "@/services/discussion-control.service";
+import { useProxyBeanState } from "packages/rx-nested-bean/src";
 
 export function useMessages() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const resourceState = useResourceState(messagesResource.current);
+  const { data: currentDiscussionId } = useProxyBeanState(
+    discussionControlService.store,
+    "currentDiscussionId"
+  );
 
-  const addMessage = useCallback(
-    async (content: string, agentId: string, type: Message["type"] = "text", replyTo?: string) => {
-      const newMessage: Message = {
-        id: nanoid(),
-        agentId,
+  const addMessage = useMemoizedFn(
+    async (
+      content: string,
+      agentId: string,
+      type: Message["type"] = "text"
+    ) => {
+      if (!currentDiscussionId) return;
+
+      const message = await messageService.addMessage(currentDiscussionId, {
         content,
+        agentId,
         type,
         timestamp: new Date(),
-        replyTo,
-      };
-      setMessages((prev) => [...prev, newMessage]);
-    },
-    []
+      });
+
+      // 触发消息列表重新加载
+      messagesResource.current.reload();
+      return message;
+    }
   );
 
   return {
-    messages,
+    messages: resourceState.data,
+    isLoading: resourceState.isLoading,
+    error: resourceState.error,
     addMessage,
   };
-} 
+}

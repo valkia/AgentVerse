@@ -2,76 +2,84 @@ import { agentsResource } from "@/resources";
 import { agentService } from "@/services/agent.service";
 import { Agent } from "@/types/agent";
 import { useMemoizedFn } from "ahooks";
-import { useState } from "react";
-import { useRequest } from "./useRequest";
+import { useResourceState } from "@/lib/resource";
+import { useOptimisticUpdate } from "./useOptimisticUpdate";
+import { useEffect, useState } from "react";
 
 interface UseAgentsProps {
   onChange?: (agents: Agent[]) => void;
 }
 
 export function useAgents({ onChange }: UseAgentsProps = {}) {
-  const initialAgents = agentsResource.list.read();
-  const [agents, setAgents] = useState<Agent[]>(initialAgents);
-  const { loading, error, withLoading } = useRequest({
-    // 对于列表数据，我们可以设置更短的防抖时间
-    debounceTime: 500,
-    minLoadingTime: 300,
-  });
+  const resource = useResourceState(agentsResource.list);
+  const { data: agents } = resource;
+  const [isLoading, setIsLoading] = useState(true);
 
-  const updateAgentsWithCallback = useMemoizedFn((newAgents: Agent[]) => {
-    setAgents(newAgents);
-    onChange?.(newAgents);
-  });
+  const withOptimisticUpdate = useOptimisticUpdate(resource, { onChange });
 
-  const refreshAgents = useMemoizedFn(() => {
-    return agentService.listAgents().then((data) => {
-      updateAgentsWithCallback(data);
-      return data;
-    });
-  });
+  useEffect(() => {
+    loadAgents();
+  }, []);
 
-  const addAgent = useMemoizedFn(() => {
-    const newAgent = agentService.createDefaultAgent();
-    return withLoading(
-      agentService.createAgent(newAgent).then(() => refreshAgents())
+  const loadAgents = async () => {
+    try {
+      const agents = await agentService.initialize();
+      setIsLoading(false);
+      return agents;
+    } catch (error) {
+      console.error("Error loading agents:", error);
+      setIsLoading(false);
+      return [];
+    }
+  };
+
+  const addAgent = useMemoizedFn(async () => {
+    const defaultAgent = agentService.createDefaultAgent();
+    const seed = `agent${Date.now().toString().slice(-4)}`;
+    defaultAgent.avatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
+    
+    return withOptimisticUpdate(
+      // 乐观更新
+      (agents) => [...agents, { ...defaultAgent, id: `temp-${seed}` }],
+      // API 调用
+      () => agentService.createAgent(defaultAgent)
     );
   });
 
-  const updateAgent = useMemoizedFn((id: string, data: Partial<Agent>) => {
-    return withLoading(
-      agentService.updateAgent(id, data).then(() => refreshAgents())
+  const updateAgent = useMemoizedFn(async (id: string, data: Partial<Agent>) => {
+    return withOptimisticUpdate(
+      // 乐观更新
+      (agents) => agents.map((a) => (a.id === id ? { ...a, ...data } : a)),
+      // API 调用
+      () => agentService.updateAgent(id, data)
     );
   });
 
-  const deleteAgent = useMemoizedFn((id: string) => {
-    return withLoading(
-      agentService.deleteAgent(id).then(() => refreshAgents())
-    );
-  });
-
-  const toggleAutoReply = useMemoizedFn((id: string, isAutoReply: boolean) => {
-    return withLoading(
-      agentService.toggleAutoReply(id, isAutoReply).then(() => refreshAgents())
+  const deleteAgent = useMemoizedFn(async (id: string) => {
+    return withOptimisticUpdate(
+      // 乐观更新
+      (agents) => agents.filter((a) => a.id !== id),
+      // API 调用
+      () => agentService.deleteAgent(id)
     );
   });
 
   const getAgentName = useMemoizedFn((id: string) => {
-    return agents.find((agent) => agent.id === id)?.name || "未知";
+    return agents.find((agent) => agent.id === id)?.name ?? "未知";
   });
 
   const getAgentAvatar = useMemoizedFn((id: string) => {
-    return agents.find((agent) => agent.id === id)?.avatar || "";
+    return agents.find((agent) => agent.id === id)?.avatar ?? "";
   });
 
   return {
     agents,
-    loading,
-    error,
+    isLoading,
+    error: resource.error,
     addAgent,
     updateAgent,
     deleteAgent,
-    toggleAutoReply,
     getAgentName,
-    getAgentAvatar,
+    getAgentAvatar
   };
 }

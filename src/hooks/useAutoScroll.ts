@@ -1,4 +1,4 @@
-import { RefObject, useRef, useEffect } from "react";
+import { RefObject, useEffect, useRef } from "react";
 
 interface AutoScrollOptions {
   autoScrollMode?: "always" | "smart" | "none";
@@ -56,9 +56,6 @@ export function useAutoScroll(
         scrollToBottom();
         break;
       case "smart":
-        console.log(
-          isNearBottomRef.current
-        );
         if (isNearBottomRef.current) {
           scrollToBottom();
         }

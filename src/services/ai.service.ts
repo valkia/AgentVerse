@@ -12,7 +12,8 @@ import {
   ProxyAPIAdapter,
   StandardProvider
 } from "@/lib/ai-service";
-import { Agent, Message as AgentMessage } from "@/types/agent";
+import { Agent } from "@/types/agent";
+import { Message as AgentMessage } from "@/types/discussion";
 import { ProviderType } from "@/types/ai";
 
 // 核心服务类

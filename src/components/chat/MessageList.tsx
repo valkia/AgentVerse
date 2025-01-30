@@ -6,7 +6,7 @@ import {
   ScrollableLayoutRef,
 } from "@/layouts/ScrollableLayout";
 import { cn } from "@/lib/utils";
-import { Message } from "@/types/agent";
+import { Message } from "@/types/discussion";
 import { ArrowDown } from "lucide-react";
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 
@@ -36,7 +36,7 @@ function MessageItem({ message, agentInfo }: MessageItemProps) {
               {getName(message.agentId)}
             </div>
             <time className="text-xs text-gray-500 dark:text-gray-400">
-              {message.timestamp.toLocaleTimeString()}
+              {new Date(message.timestamp).toLocaleTimeString()}
             </time>
           </div>
           <div className="mt-1 text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg break-words">

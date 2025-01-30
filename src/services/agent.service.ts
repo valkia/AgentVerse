@@ -1,36 +1,16 @@
 import { DEFAULT_AGENTS } from "@/config/agents";
 import { MockHttpProvider } from "@/lib/storage";
-import { AgentDataProvider } from "@/lib/storage/types";
 import { Agent } from "@/types/agent";
-import { ResourceManagerImpl, createResource } from "@/lib/resource";
+import { AgentDataProvider } from "@/types/storage";
 
 export class AgentService {
-  private readonly resource: ResourceManagerImpl<Agent[]>;
-
-  constructor(private readonly provider: AgentDataProvider) {
-    // 使用600ms的最小加载时间，3次重试机制
-    this.resource = createResource(this.initialize(), {
-      minLoadingTime: 600,
-      retryTimes: 3,
-      retryDelay: 1000
-    });
-  }
-
-  // 资源访问方法
-  getInitialAgents(): Agent[] {
-    return this.resource.read();
-  }
-
-  // 重新加载数据
-  reloadAgents() {
-    this.resource.reload(this.initialize());
-  }
+  constructor(private readonly provider: AgentDataProvider) {}
 
   async initialize(): Promise<Agent[]> {
     const agents = await this.listAgents();
     if (agents.length === 0) {
       return Promise.all(
-        DEFAULT_AGENTS.map(agent => this.createAgent(agent))
+        DEFAULT_AGENTS.map((agent) => this.createAgent(agent))
       );
     }
     return agents;
@@ -59,7 +39,6 @@ export class AgentService {
     }
 
     const result = await this.provider.create(data);
-    this.reloadAgents(); // 自动重新加载列表
     return result;
   }
 
@@ -77,7 +56,6 @@ export class AgentService {
     }
 
     const result = await this.provider.update(id, data);
-    this.reloadAgents(); // 自动重新加载列表
     return result;
   }
 
@@ -89,25 +67,19 @@ export class AgentService {
     }
 
     await this.provider.delete(id);
-    this.reloadAgents(); // 自动重新加载列表
   }
-
-  async toggleAutoReply(id: string, isAutoReply: boolean): Promise<Agent> {
-    return this.updateAgent(id, { isAutoReply });
-  }
-
   // 工具方法
   createDefaultAgent(): Omit<Agent, "id"> {
+    const seed = Date.now().toString();
     return {
       name: "新成员",
-      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${Date.now()}`,
+      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}&backgroundColor=b6e3f4,c7f2a4,f4d4d4`,
       prompt: "请在编辑时设置该成员的具体职责和行为方式。",
       role: "participant",
       personality: "待设置",
       expertise: [],
       bias: "待设置",
       responseStyle: "待设置",
-      isAutoReply: true,
     };
   }
 }

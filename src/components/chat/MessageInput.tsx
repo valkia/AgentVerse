@@ -18,17 +18,31 @@ interface MessageInputProps {
   agents: Agent[];
   onSendMessage: (content: string, agentId: string) => Promise<void>;
   className?: string;
+  isFirstMessage?: boolean;
+  onStartDiscussion?: () => void;
 }
 
-export function MessageInput({ agents, onSendMessage, className }: MessageInputProps) {
+export function MessageInput({ 
+  agents, 
+  onSendMessage, 
+  className,
+  isFirstMessage = false,
+  onStartDiscussion
+}: MessageInputProps) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string>(() => {
+    // 如果是第一条消息，默认选择主持人
+    if (isFirstMessage) {
+      const moderator = agents.find(a => a.role === 'moderator');
+      return moderator?.id || '';
+    }
+    // 否则默认选择参与者
     const participant = agents.find(a => a.role === 'participant');
     return participant?.id || agents[0]?.id || "";
   });
+  
   const inputRef = useRef<HTMLInputElement>(null);
-
   const selectedAgent = agents.find(a => a.id === selectedAgentId);
 
   useEffect(() => {
@@ -44,6 +58,10 @@ export function MessageInput({ agents, onSendMessage, className }: MessageInputP
       try {
         setIsLoading(true);
         await onSendMessage(input.trim(), selectedAgentId);
+        // 如果是第一条消息，自动启动讨论
+        if (isFirstMessage && onStartDiscussion) {
+          onStartDiscussion();
+        }
         setInput("");
       } finally {
         setIsLoading(false);
@@ -64,12 +82,18 @@ export function MessageInput({ agents, onSendMessage, className }: MessageInputP
     <div className={cn(className)}>
       <div className="p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Select value={selectedAgentId} onValueChange={setSelectedAgentId} disabled={isLoading}>
+          <Select 
+            value={selectedAgentId} 
+            onValueChange={setSelectedAgentId} 
+            disabled={isLoading || (isFirstMessage && selectedAgent?.role === 'moderator')}
+          >
             <SelectTrigger className="w-[180px] h-9 text-sm">
               <SelectValue placeholder="选择发送消息的Agent" />
             </SelectTrigger>
             <SelectContent>
-              {agents.map((agent) => (
+              {agents
+                .filter(agent => !isFirstMessage || agent.role === 'moderator')
+                .map((agent) => (
                 <SelectItem
                   key={agent.id}
                   value={agent.id}
@@ -99,7 +123,13 @@ export function MessageInput({ agents, onSendMessage, className }: MessageInputP
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={selectedAgent ? `以 ${selectedAgent.name} 的身份发送消息... (Cmd/Ctrl + Enter 发送)` : "请先选择一个Agent..."}
+            placeholder={
+              isFirstMessage
+                ? "请输入讨论主题，主持人将开启讨论..."
+                : selectedAgent
+                  ? `以 ${selectedAgent.name} 的身份发送消息... (Cmd/Ctrl + Enter 发送)`
+                  : "请先选择一个Agent..."
+            }
             className="flex-1 h-9 text-sm"
             disabled={!selectedAgent || isLoading}
           />
