@@ -6,12 +6,12 @@ import { DiscussionMember } from "@/types/discussion-member";
 import { nanoid } from "nanoid";
 import { createNestedBean, createProxyBean } from "rx-nested-bean";
 import { agentService } from "./agent.service";
-import { aiService } from "./ai.service";
+import { AIService, aiService } from "./ai.service";
 import {
   DiscussionError,
   DiscussionErrorType,
   handleDiscussionError,
-} from "./discussion-error";
+} from "./discussion-error.util";
 
 class TimeoutManager {
   private timeouts = new Set<NodeJS.Timeout>();
@@ -57,6 +57,8 @@ export class DiscussionControlService {
   private topicBean = createProxyBean(this.store, "topic");
 
   private timeoutManager = new TimeoutManager();
+
+  constructor(private aiService: AIService) {}
 
   getCurrentDiscussionId(): string | null {
     return this.currentDiscussionIdBean.get();
@@ -239,13 +241,13 @@ export class DiscussionControlService {
   ) {
     try {
       const content = type === "summary"
-        ? await aiService.generateModeratorSummary(
+        ? await this.aiService.generateModeratorSummary(
             topic,
             this.settingsBean.get().temperature,
             this.messagesBean.get(),
             agent
           )
-        : await aiService.generateResponse(
+        : await this.aiService.generateResponse(
             topic,
             this.settingsBean.get().temperature,
             this.messagesBean.get(),
@@ -302,4 +304,4 @@ export class DiscussionControlService {
   }
 }
 
-export const discussionControlService = new DiscussionControlService();
+export const discussionControlService = new DiscussionControlService(aiService);

@@ -16,16 +16,74 @@ import { Agent } from "@/types/agent";
 import { Message as AgentMessage } from "@/types/discussion";
 import { ProviderType } from "@/types/ai";
 
-// 核心服务类
-class AIService {
-  private static readonly MAX_CONTEXT_MESSAGES = 5;
+// 消息处理器接口
+export interface MessageProcessor {
+  process?(message: string): string;
+  getSystemPrompt(): string;
+}
 
-  constructor(private readonly provider: LLMProvider) {}
+// 字数限制处理器
+export class WordLimitProcessor implements MessageProcessor {
+  constructor(private readonly limit: number = 500) {}
+
+  getSystemPrompt(): string {
+    return `\n注意：每次回复请严格控制在${this.limit}字以内，超过部分将被截断。`;
+  }
+}
+
+// 消息发送者处理器
+export class MessageSenderProcessor implements MessageProcessor {
+  constructor(private readonly members: Agent[]) {}
+
+  getSystemPrompt(): string {
+    return `\n注意：在对话中，你将看到其他参与者的发言。每个发言者的身份和角色如下：
+${this.members.map(member => `- ${member.name}（${member.role}）：${member.expertise.join('、')}`).join('\n')}
+
+请根据发言者的身份和专业领域来理解和回应他们的观点。`;
+  }
+}
+
+// 核心服务类
+export class AIService {
+  private static readonly MAX_CONTEXT_MESSAGES = 5;
+  private messageProcessors: MessageProcessor[] = [];
+  private members: Agent[] = [];
+
+  constructor(
+    private readonly provider: LLMProvider,
+    processors: MessageProcessor[] = [new WordLimitProcessor()]
+  ) {
+    this.messageProcessors = processors;
+  }
+
+  // 更新成员列表
+  updateMembers(members: Agent[]) {
+    this.members = members;
+    // 更新或添加MessageSenderProcessor
+    const senderProcessor = this.messageProcessors.find(p => p instanceof MessageSenderProcessor);
+    if (senderProcessor) {
+      this.messageProcessors = this.messageProcessors.map(p => 
+        p instanceof MessageSenderProcessor ? new MessageSenderProcessor(members) : p
+      );
+    } else {
+      this.messageProcessors.push(new MessageSenderProcessor(members));
+    }
+  }
+
+  // 添加处理器
+  addProcessor(processor: MessageProcessor) {
+    this.messageProcessors.push(processor);
+  }
+
+  // 清除所有处理器
+  clearProcessors() {
+    this.messageProcessors = [];
+  }
 
   private buildSystemPrompt(agent: Agent, topic: string): string {
-    return `${agent.prompt}
+    const basePrompt = `${agent.prompt}
 
-讨论主题：${topic}
+目标：${topic}
 
 你的角色是：${agent.role}
 性格特征：${agent.personality}
@@ -33,7 +91,17 @@ class AIService {
 倾向性：${agent.bias}
 回复风格：${agent.responseStyle}
 
-请严格按照以上设定进行回复。保持角色特征的一致性，展现专业知识，同时体现个性化的观点。`;
+注意事项：
+1. 请严格按照以上设定进行回复
+2. 保持角色特征的一致性，展现专业知识，同时体现个性化的观点
+3. 回复要简明扼要，直击重点`;
+
+    // 添加所有处理器的系统提示
+    const processorPrompts = this.messageProcessors
+      .map(processor => processor.getSystemPrompt())
+      .join("");
+
+    return basePrompt + processorPrompts;
   }
 
   private buildMessages(
@@ -44,11 +112,17 @@ class AIService {
     return [
       { role: "system", content: systemPrompt } as ChatMessage,
       ...messages.slice(-AIService.MAX_CONTEXT_MESSAGES).map(
-        (msg) =>
-          ({
+        (msg) => {
+          const sender = this.members.find(m => m.id === msg.agentId);
+          const content = sender 
+            ? `${sender.name}：${msg.content}`
+            : msg.content;
+          
+          return {
             role: msg.agentId === currentAgentId ? "assistant" : "user",
-            content: msg.content,
-          } as ChatMessage)
+            content,
+          } as ChatMessage;
+        }
       ),
     ];
   }
@@ -62,10 +136,17 @@ class AIService {
     try {
       const systemPrompt = this.buildSystemPrompt(agent, prompt);
       const messageList = this.buildMessages(systemPrompt, messages, agent.id);
-      return await this.provider.generateCompletion(
+      let response = await this.provider.generateCompletion(
         messageList,
         temperature,
       );
+
+      // 应用所有处理器
+      for (const processor of this.messageProcessors) {
+        response = processor.process ? processor.process(response) : response;
+      }
+
+      return response;
     } catch (error) {
       console.error("AI Service Error:", error);
       throw error instanceof AIServiceError

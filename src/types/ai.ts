@@ -1,12 +1,27 @@
-import { BaseConfig } from "@/lib/ai-service";
 
 export enum ProviderType {
   DEEPSEEK = "deepseek",
   MOONSHOT = "moonshot",
   DOBRAIN = "dobrain",
   OPENAI = "openai",
+  DASHSCOPE = "dashscope",
 }
 
+export interface BaseProviderConfig {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+  maxTokens: number;
+}
+
+export interface DobrainProviderConfig extends BaseProviderConfig {
+  topP: number;
+  presencePenalty: number;
+  frequencyPenalty: number;
+}
+
+export type ProviderConfig = BaseProviderConfig | DobrainProviderConfig;
+
 export type ProviderConfigs = {
-  [K in ProviderType]: BaseConfig;
+  [key in ProviderType]: ProviderConfig;
 };

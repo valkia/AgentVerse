@@ -1,10 +1,12 @@
-import { discussionsResource } from "@/resources";
+import { discussionsResource, messagesResource } from "@/resources";
 import { discussionService } from "@/services/discussion.service";
 import { discussionControlService } from "@/services/discussion-control.service";
+import { messageService } from "@/services/message.service";
 import { Discussion } from "@/types/discussion";
 import { useMemoizedFn } from "ahooks";
 import { useResourceState } from "@/lib/resource";
 import { useOptimisticUpdate } from "./useOptimisticUpdate";
+import { useToast } from "./use-toast";
 
 interface UseDiscussionsProps {
   onChange?: (discussions: Discussion[]) => void;
@@ -14,6 +16,7 @@ export function useDiscussions({ onChange }: UseDiscussionsProps = {}) {
   const resource = useResourceState(discussionsResource.list);
   const { data: discussions } = resource;
   const { data: currentDiscussion } = useResourceState(discussionsResource.current);
+  const { toast } = useToast();
 
   const withOptimisticUpdate = useOptimisticUpdate(resource, { onChange });
 
@@ -75,6 +78,46 @@ export function useDiscussions({ onChange }: UseDiscussionsProps = {}) {
     discussionsResource.current.reload();
   });
 
+  const clearMessages = useMemoizedFn(async (discussionId: string) => {
+    try {
+      await messageService.clearMessages(discussionId);
+      // 重新加载当前消息列表
+      messagesResource.current.reload();
+      toast({
+        title: "清空成功",
+        description: "已清空所有消息",
+      });
+    } catch (error) {
+      console.error('Error clearing messages:', error);
+      toast({
+        title: "清空失败",
+        description: error instanceof Error ? error.message : "未知错误",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const clearAllMessages = useMemoizedFn(async () => {
+    try {
+      await Promise.all(discussions.map(discussion => 
+        messageService.clearMessages(discussion.id)
+      ));
+      // 重新加载当前消息列表
+      messagesResource.current.reload();
+      toast({
+        title: "清空成功",
+        description: "已清空所有会话的消息",
+      });
+    } catch (error) {
+      console.error('Error clearing all messages:', error);
+      toast({
+        title: "清空失败",
+        description: error instanceof Error ? error.message : "未知错误",
+        variant: "destructive",
+      });
+    }
+  });
+
   return {
     discussions,
     currentDiscussion,
@@ -83,6 +126,8 @@ export function useDiscussions({ onChange }: UseDiscussionsProps = {}) {
     createDiscussion,
     updateDiscussion,
     deleteDiscussion,
-    selectDiscussion
+    selectDiscussion,
+    clearMessages,
+    clearAllMessages
   };
 } 

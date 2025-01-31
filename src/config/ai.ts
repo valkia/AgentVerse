@@ -28,11 +28,21 @@ export const AI_PROVIDER_CONFIG: ProviderConfigs = {
     frequencyPenalty:
       Number(import.meta.env.VITE_DOBRAIN_FREQUENCY_PENALTY) || 0,
   },
+
   [ProviderType.OPENAI]: {
     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
     baseUrl: import.meta.env.VITE_OPENAI_API_URL || "https://api.openai.com/v1",
     model: import.meta.env.VITE_OPENAI_MODEL || "gpt-3.5-turbo",
     maxTokens: Number(import.meta.env.VITE_OPENAI_MAX_TOKENS) || 1000,
+  },
+
+  [ProviderType.DASHSCOPE]: {
+    apiKey: import.meta.env.VITE_DASHSCOPE_API_KEY,
+    baseUrl:
+      import.meta.env.VITE_DASHSCOPE_API_URL ||
+      "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    model: import.meta.env.VITE_DASHSCOPE_MODEL || "deepseek-v3",
+    maxTokens: Number(import.meta.env.VITE_DASHSCOPE_MAX_TOKENS) || 1000,
   },
 };
 

@@ -9,6 +9,7 @@ import { useProxyBeanState } from "rx-nested-bean";
 import { SettingSelect } from "./setting-select";
 import { SettingSlider } from "./setting-slider";
 import { SettingSwitch } from "./setting-switch";
+import { ClearMessagesButton } from "./clear-messages-button";
 
 type ModerationStyle = "strict" | "relaxed";
 
@@ -34,7 +35,11 @@ function SettingsPanel({ settings, onSettingsChange }: SettingsPanelProps) {
   };
 
   return (
-    <div className="space-y-4 rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
+    <div className="space-y-4 rounded-lg border bg-card/50 p-4">
+      <div className="text-sm font-medium text-muted-foreground">
+        讨论设置
+      </div>
+      
       <SettingSlider
         label="回复间隔"
         description="每个Agent之间的回复间隔时间"
@@ -57,20 +62,22 @@ function SettingsPanel({ settings, onSettingsChange }: SettingsPanelProps) {
         formatValue={(v) => v.toFixed(1)}
       />
 
-      <SettingSelect<ModerationStyle>
-        label="主持风格"
-        description="主持人引导讨论的方式"
-        value={settings.moderationStyle}
-        onChange={(value) => updateSetting("moderationStyle", value)}
-        options={MODERATION_STYLE_OPTIONS}
-      />
+      <div className="grid grid-cols-2 gap-4">
+        <SettingSelect<ModerationStyle>
+          label="主持风格"
+          description="主持人引导讨论的方式"
+          value={settings.moderationStyle}
+          onChange={(value) => updateSetting("moderationStyle", value)}
+          options={MODERATION_STYLE_OPTIONS}
+        />
 
-      <SettingSwitch
-        label="允许冲突"
-        description="是否允许参与者之间产生分歧"
-        checked={settings.allowConflict}
-        onCheckedChange={(checked) => updateSetting("allowConflict", checked)}
-      />
+        <SettingSwitch
+          label="允许冲突"
+          description="是否允许参与者之间产生分歧"
+          checked={settings.allowConflict}
+          onCheckedChange={(checked) => updateSetting("allowConflict", checked)}
+        />
+      </div>
     </div>
   );
 }
@@ -126,46 +133,65 @@ export function DiscussionController({
   const isActive = status === "active";
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-4">
-        <Button
-          onClick={() => {
-            if (isActive) {
-              discussionControlService.pause();
-            } else {
-              discussionControlService.run();
-            }
-          }}
-          variant={isActive ? "destructive" : "default"}
-          size="icon"
-          className="shrink-0"
-        >
-          {isActive ? (
-            <PauseCircle className="w-5 h-5" />
-          ) : (
-            <PlayCircle className="w-5 h-5" />
-          )}
-        </Button>
+    <div className="rounded-lg border bg-card p-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => {
+              if (isActive) {
+                discussionControlService.pause();
+              } else {
+                discussionControlService.run();
+              }
+            }}
+            variant={isActive ? "destructive" : "default"}
+            size="icon"
+            className="shrink-0 transition-all duration-200"
+            title={isActive ? "暂停讨论" : "开始讨论"}
+          >
+            {isActive ? (
+              <PauseCircle className="w-5 h-5" />
+            ) : (
+              <PlayCircle className="w-5 h-5" />
+            )}
+          </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowSettings(!showSettings)}
-          className={cn(
-            "shrink-0 transition-colors",
-            showSettings && "bg-accent text-accent-foreground"
-          )}
-        >
-          <Settings2 className="w-5 h-5" />
-        </Button>
+          <span className="text-sm text-muted-foreground">
+            {isActive ? "讨论进行中..." : "讨论已暂停"}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <ClearMessagesButton 
+            size="icon" 
+            className="shrink-0"
+            variant="ghost"
+          />
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowSettings(!showSettings)}
+            className={cn(
+              "shrink-0 transition-all",
+              showSettings && "bg-accent text-accent-foreground rotate-180"
+            )}
+            title="设置"
+          >
+            <Settings2 className="w-5 h-5" />
+          </Button>
+        </div>
       </div>
 
-      {showSettings && (
+      <div className={cn(
+        "overflow-hidden transition-all duration-200 ease-in-out",
+        showSettings ? "mt-3 max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+      )}>
         <SettingsPanel
           settings={settings}
           onSettingsChange={setSettings}
         />
-      )}
+      </div>
     </div>
   );
 }

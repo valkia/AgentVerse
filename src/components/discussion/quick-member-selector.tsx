@@ -88,7 +88,7 @@ export function QuickMemberSelector({ onSelect }: QuickMemberSelectorProps) {
               <div className="font-medium">{name}</div>
               {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             </div>
-            <div className="text-xs text-muted-foreground text-left">
+            <div className="text-xs text-muted-foreground text-left line-clamp-2 w-full">
               {description}
             </div>
           </Button>

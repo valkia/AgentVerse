@@ -26,6 +26,23 @@ export class MessageService {
 
     return this.provider.create(newMessage);
   }
+
+  async createMessage(data: Omit<Message, "id">): Promise<Message> {
+    return this.provider.create(data);
+  }
+
+  async updateMessage(id: string, data: Partial<Message>): Promise<Message> {
+    return this.provider.update(id, data);
+  }
+
+  async deleteMessage(id: string): Promise<void> {
+    return this.provider.delete(id);
+  }
+
+  async clearMessages(discussionId: string): Promise<void> {
+    const messages = await this.listMessages(discussionId);
+    await Promise.all(messages.map(message => this.deleteMessage(message.id)));
+  }
 }
 
 // 创建服务实例

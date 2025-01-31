@@ -1,10 +1,10 @@
+import { useDiscussions } from "@/hooks/useDiscussions";
 import { cn } from "@/lib/utils";
 import { discussionControlService } from "@/services/discussion-control.service";
 import { Message } from "@/types/discussion";
 import { useRef } from "react";
 import { MessageInput } from "./message-input";
 import { MessageList, MessageListRef } from "./message-list";
-import { useBeanState } from "packages/rx-nested-bean/src";
 
 interface ChatAreaProps {
   messages: Message[];
@@ -36,10 +36,8 @@ export function ChatArea({
   inputAreaClassName,
 }: ChatAreaProps) {
   const messageListRef = useRef<MessageListRef>(null);
-  const { data: currentDiscussionId } = useBeanState(
-    discussionControlService.currentDiscussionIdBean
-  );
   const isFirstMessage = messages.length === 0;
+  const { currentDiscussion } = useDiscussions();
 
   const handleSendMessage = async (content: string, agentId: string) => {
     await onSendMessage(content, agentId);
@@ -53,11 +51,17 @@ export function ChatArea({
     getAvatar: getAgentAvatar,
   };
 
+  if (!currentDiscussion) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-muted-foreground">
+        请选择或创建一个会话
+      </div>
+    );
+  }
+
   return (
     <div
-      className={cn(defaultClasses.root, className)}
-      data-testid="chat-area-root"
-      data-discussion-id={currentDiscussionId}
+      className={cn("flex flex-col flex-1 overflow-hidden h-full", className)}
     >
       <MessageList
         ref={messageListRef}
