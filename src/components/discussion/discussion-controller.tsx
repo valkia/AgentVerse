@@ -76,9 +76,7 @@ function SettingsPanel({ settings, onSettingsChange }: SettingsPanelProps) {
 }
 
 interface DiscussionControllerProps {
-  topic?: string;
   status: Discussion["status"];
-  onStatusChange: (status: Discussion["status"]) => void;
   onSendMessage: (
     content: string,
     agentId: string,
@@ -88,9 +86,7 @@ interface DiscussionControllerProps {
 }
 
 export function DiscussionController({
-  topic,
   status,
-  onStatusChange,
   onSendMessage,
 }: DiscussionControllerProps) {
   const [showSettings, setShowSettings] = useState(false);
@@ -101,19 +97,23 @@ export function DiscussionController({
   const { members } = useDiscussionMembers();
 
   useEffect(() => {
-    if (status === "active" && topic) {
+    discussionControlService.setMembers(members);
+  }, [members]);
+
+  useEffect(() => {
+    if (status === "active" && discussionControlService.getTopic()) {
       const activeMembers = members.filter(m => m.isAutoReply);
       if (activeMembers.length > 0) {
-        discussionControlService.startDiscussion(topic, activeMembers);
+        discussionControlService.run();
       }
     } else {
-      discussionControlService.stopDiscussion();
+      discussionControlService.pause();
     }
-  }, [status, topic, members]);
+  }, [status, members]);
 
   useEffect(()=>{
     return ()=>{
-      discussionControlService.stopDiscussion();
+      discussionControlService.pause();
     }
   },[])
 
@@ -123,21 +123,19 @@ export function DiscussionController({
     });
   }, [onSendMessage]);
 
-  const handleStatusChange = () => {
-    if (status === "active") {
-      onStatusChange("paused");
-    } else if (topic) {
-      onStatusChange("active");
-    }
-  };
-
   const isActive = status === "active";
 
   return (
     <div className="space-y-4">
       <div className="flex gap-4">
         <Button
-          onClick={handleStatusChange}
+          onClick={() => {
+            if (isActive) {
+              discussionControlService.pause();
+            } else {
+              discussionControlService.run();
+            }
+          }}
           variant={isActive ? "destructive" : "default"}
           size="icon"
           className="shrink-0"

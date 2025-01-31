@@ -36,6 +36,10 @@ export class MockHttpProvider<T extends { id: string }> implements DataProvider<
     return this.withDelay(() => this.localStorage.create(data));
   }
 
+  async createMany(dataArray: Omit<T, "id">[]): Promise<T[]> {
+    return this.withDelay(() => this.localStorage.createMany(dataArray));
+  }
+
   async update(id: string, data: Partial<T>): Promise<T> {
     return this.withDelay(() => this.localStorage.update(id, data));
   }

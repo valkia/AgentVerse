@@ -30,6 +30,13 @@ export class LocalStorageProvider<T extends { id: string }> implements DataProvi
     return newItem;
   }
 
+  async createMany(dataArray: Omit<T, "id">[]): Promise<T[]> {
+    const items = this.getStoredItems();
+    const newItems = dataArray.map(data => ({ ...data, id: nanoid() } as T));
+    this.setStoredItems([...items, ...newItems]);
+    return newItems;
+  }
+
   async update(id: string, data: Partial<T>): Promise<T> {
     const items = this.getStoredItems();
     const index = items.findIndex(item => item.id === id);

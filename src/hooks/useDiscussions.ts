@@ -18,7 +18,7 @@ export function useDiscussions({ onChange }: UseDiscussionsProps = {}) {
   const withOptimisticUpdate = useOptimisticUpdate(resource, { onChange });
 
   const createDiscussion = useMemoizedFn(async (title: string) => {
-    return withOptimisticUpdate(
+    const newDiscussion = await withOptimisticUpdate(
       // 乐观更新
       (discussions) => [
         ...discussions,
@@ -42,6 +42,10 @@ export function useDiscussions({ onChange }: UseDiscussionsProps = {}) {
       // API 调用
       () => discussionService.createDiscussion(title)
     );
+
+    // 自动选中新创建的会话
+    selectDiscussion(newDiscussion.id);
+    return newDiscussion;
   });
 
   const updateDiscussion = useMemoizedFn((id: string, data: Partial<Discussion>) => {

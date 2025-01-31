@@ -709,6 +709,16 @@ export const useProxyBeanState = <
   };
 };
 
+export const useBeanState = <T>(bean: INestedBean<T>) => {
+  const [b] = useState(() => bean);
+  const data = b.use();
+  return {
+    data,
+    set: b.set,
+    get: b.get,
+  };
+};
+
 // const bean = createNestedBean({
 //   messages: [] as string[],
 //   pagination: {

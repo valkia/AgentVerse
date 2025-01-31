@@ -2,22 +2,33 @@ import { DEFAULT_AGENTS } from "@/config/agents";
 import { createResource } from "@/lib/resource";
 import { agentService } from "@/services/agent.service";
 import { discussionControlService } from "@/services/discussion-control.service";
+import { discussionMemberService } from "@/services/discussion-member.service";
 import { discussionService } from "@/services/discussion.service";
 import { messageService } from "@/services/message.service";
 import { Discussion } from "@/types/discussion";
-import { discussionMemberService } from "@/services/discussion-member.service";
 import { DiscussionMember } from "@/types/discussion-member";
 import { filter, firstValueFrom, switchMap } from "rxjs";
 
 // 应用级资源
 export const agentListResource = createResource(() =>
-  agentService.listAgents().then((agents) => {
-    if (agents.length === 0) {
-      return Promise.all(
-        DEFAULT_AGENTS.map((agent) => agentService.createAgent(agent))
+  agentService.listAgents().then(async (existingAgents) => {
+    // 检查每个预设的 agent 是否存在
+    const missingAgents = DEFAULT_AGENTS.filter(
+      (defaultAgent) =>
+        !existingAgents.some(
+          (existing) =>
+            existing.name === defaultAgent.name &&
+            existing.role === defaultAgent.role
+        )
+    );
+    if (missingAgents.length > 0) {
+      console.log(`Creating ${missingAgents.length} missing agents...`);
+      await Promise.all(
+        missingAgents.map((agent) => agentService.createAgent(agent))
       );
+      return agentService.listAgents();
     }
-    return agents;
+    return existingAgents;
   })
 );
 

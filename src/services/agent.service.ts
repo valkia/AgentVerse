@@ -1,21 +1,10 @@
-import { DEFAULT_AGENTS } from "@/config/agents";
+import { STORAGE_CONFIG } from "@/config/storage";
 import { MockHttpProvider } from "@/lib/storage";
 import { Agent } from "@/types/agent";
 import { AgentDataProvider } from "@/types/storage";
-import { STORAGE_CONFIG } from "@/config/storage";
 
 export class AgentService {
   constructor(private provider: AgentDataProvider) {}
-
-  async initialize(): Promise<Agent[]> {
-    const agents = await this.listAgents();
-    if (agents.length === 0) {
-      return Promise.all(
-        DEFAULT_AGENTS.map((agent) => this.createAgent(agent))
-      );
-    }
-    return agents;
-  }
 
   async listAgents(): Promise<Agent[]> {
     return this.provider.list();
@@ -31,42 +20,16 @@ export class AgentService {
       throw new Error("Agent name is required");
     }
 
-    // 主持人角色的特殊处理
-    if (data.role === "moderator") {
-      const agents = await this.listAgents();
-      if (agents.some((agent) => agent.role === "moderator")) {
-        throw new Error("Only one moderator is allowed");
-      }
-    }
-
     const result = await this.provider.create(data);
     return result;
   }
 
   async updateAgent(id: string, data: Partial<Agent>): Promise<Agent> {
-    // 如果要更改角色为主持人，需要检查
-    if (data.role === "moderator") {
-      const agents = await this.listAgents();
-      const currentAgent = await this.getAgent(id);
-      if (
-        currentAgent.role !== "moderator" &&
-        agents.some((agent) => agent.role === "moderator")
-      ) {
-        throw new Error("Only one moderator is allowed");
-      }
-    }
-
     const result = await this.provider.update(id, data);
     return result;
   }
 
   async deleteAgent(id: string): Promise<void> {
-    // 检查是否试图删除主持人
-    const agent = await this.getAgent(id);
-    if (agent.role === "moderator") {
-      throw new Error("Cannot delete the moderator");
-    }
-
     await this.provider.delete(id);
   }
   // 工具方法
@@ -86,5 +49,8 @@ export class AgentService {
 }
 
 export const agentService = new AgentService(
-  new MockHttpProvider<Agent>(STORAGE_CONFIG.KEYS.AGENTS, STORAGE_CONFIG.MOCK_DELAY_MS)
+  new MockHttpProvider<Agent>(
+    STORAGE_CONFIG.KEYS.AGENTS,
+    STORAGE_CONFIG.MOCK_DELAY_MS
+  )
 );

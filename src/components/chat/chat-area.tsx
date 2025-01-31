@@ -1,19 +1,20 @@
 import { cn } from "@/lib/utils";
-import { Agent } from "@/types/agent";
+import { discussionControlService } from "@/services/discussion-control.service";
 import { Message } from "@/types/discussion";
 import { useRef } from "react";
 import { MessageInput } from "./message-input";
 import { MessageList, MessageListRef } from "./message-list";
+import { useBeanState } from "packages/rx-nested-bean/src";
 
 interface ChatAreaProps {
   messages: Message[];
-  agents: Agent[];
   onSendMessage: (content: string, agentId: string) => Promise<void>;
   getAgentName: (agentId: string) => string;
   getAgentAvatar: (agentId: string) => string;
   className?: string;
   messageListClassName?: string;
   inputAreaClassName?: string;
+  discussionStatus?: "active" | "paused" | "completed";
   onStartDiscussion?: () => void;
 }
 
@@ -27,17 +28,24 @@ const defaultClasses = {
 
 export function ChatArea({
   messages,
-  agents,
   onSendMessage,
   getAgentName,
   getAgentAvatar,
   className,
   messageListClassName,
   inputAreaClassName,
-  onStartDiscussion,
 }: ChatAreaProps) {
   const messageListRef = useRef<MessageListRef>(null);
+  const { data: currentDiscussionId } = useBeanState(
+    discussionControlService.currentDiscussionIdBean
+  );
   const isFirstMessage = messages.length === 0;
+
+  const handleSendMessage = async (content: string, agentId: string) => {
+    await onSendMessage(content, agentId);
+    discussionControlService.run();
+    messageListRef.current?.scrollToBottom();
+  };
 
   // 创建一个 agent 信息获取器对象，避免传递多个函数
   const agentInfoGetter = {
@@ -46,7 +54,11 @@ export function ChatArea({
   };
 
   return (
-    <div className={cn(defaultClasses.root, className)} data-testid="chat-area-root">
+    <div
+      className={cn(defaultClasses.root, className)}
+      data-testid="chat-area-root"
+      data-discussion-id={currentDiscussionId}
+    >
       <MessageList
         ref={messageListRef}
         messages={messages}
@@ -55,15 +67,13 @@ export function ChatArea({
         data-testid="chat-message-list"
       />
 
-      <div className={cn(defaultClasses.inputArea, inputAreaClassName)} data-testid="chat-input-area">
+      <div
+        className={cn(defaultClasses.inputArea, inputAreaClassName)}
+        data-testid="chat-input-area"
+      >
         <MessageInput
-          agents={agents}
           isFirstMessage={isFirstMessage}
-          onStartDiscussion={onStartDiscussion}
-          onSendMessage={async (content, agentId) => {
-            await onSendMessage(content, agentId);
-            messageListRef.current?.scrollToBottom();
-          }}
+          onSendMessage={handleSendMessage}
           className={defaultClasses.inputWrapper}
           data-testid="chat-message-input"
         />

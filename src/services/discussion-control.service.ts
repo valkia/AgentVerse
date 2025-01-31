@@ -1,53 +1,70 @@
+import { DEFAULT_SETTINGS } from "@/config/settings";
 import { RxEvent } from "@/lib/rx-event";
 import { Agent } from "@/types/agent";
-import { DiscussionSettings, Message } from "@/types/discussion";
+import { Message } from "@/types/discussion";
+import { DiscussionMember } from "@/types/discussion-member";
 import { nanoid } from "nanoid";
 import { createNestedBean, createProxyBean } from "rx-nested-bean";
-import { aiService } from "./ai.service";
-import { DEFAULT_SETTINGS } from "@/config/settings";
-import { DiscussionMember } from "@/types/discussion-member";
 import { agentService } from "./agent.service";
+import { aiService } from "./ai.service";
+import {
+  DiscussionError,
+  DiscussionErrorType,
+  handleDiscussionError,
+} from "./discussion-error";
+
+class TimeoutManager {
+  private timeouts = new Set<NodeJS.Timeout>();
+
+  schedule(fn: () => void, delay: number) {
+    const timeout = setTimeout(() => {
+      fn();
+      this.timeouts.delete(timeout);
+    }, delay);
+    this.timeouts.add(timeout);
+    return timeout;
+  }
+
+  clearAll() {
+    this.timeouts.forEach(clearTimeout);
+    this.timeouts.clear();
+  }
+}
 
 export class DiscussionControlService {
-  // private messages: Message[] = [];
-  private timeoutIds: NodeJS.Timeout[] = [];
-  private currentTopic: string = "";
-  private currentAgents: Agent[] = [];
-  // private currentSettings: DiscussionSettings | null = null;
-  // private isPaused: boolean = false;
-  // private lastParticipantIndex: number = -1;
+  store = createNestedBean({
+    messages: [] as Message[],
+    isPaused: true,
+    currentDiscussionId: null as string | null,
+    settings: DEFAULT_SETTINGS,
+    currentRound: 0,
+    currentSpeakerIndex: -1,
+    members: [] as DiscussionMember[],
+    topic: "",
+  });
+
   onMessage$ = new RxEvent<Message>();
   onError$ = new RxEvent<Error>();
   onCurrentDiscussionIdChange$ = new RxEvent<string | null>();
-  store = createNestedBean({
-    messages: [] as Message[],
-    isPaused: false,
-    lastParticipantIndex: -1,
-    settings: DEFAULT_SETTINGS,
-    currentDiscussionId: null as string | null,
-  });
 
   private messagesBean = createProxyBean(this.store, "messages");
-  private isPausedBean = createProxyBean(this.store, "isPaused");
-  private lastParticipantIndexBean = createProxyBean(
-    this.store,
-    "lastParticipantIndex"
-  );
+  isPausedBean = createProxyBean(this.store, "isPaused");
   private settingsBean = createProxyBean(this.store, "settings");
-  private currentDiscussionIdBean = createProxyBean(
-    this.store,
-    "currentDiscussionId"
-  );
+  currentDiscussionIdBean = createProxyBean(this.store, "currentDiscussionId");
+  private currentRoundBean = createProxyBean(this.store, "currentRound");
+  private currentSpeakerIndexBean = createProxyBean(this.store, "currentSpeakerIndex");
+  private membersBean = createProxyBean(this.store, "members");
+  private topicBean = createProxyBean(this.store, "topic");
+
+  private timeoutManager = new TimeoutManager();
 
   getCurrentDiscussionId(): string | null {
     return this.currentDiscussionIdBean.get();
   }
 
-  getCurrentDiscussionId$()  {
+  getCurrentDiscussionId$() {
     return this.currentDiscussionIdBean.$;
   }
-
-  
 
   setCurrentDiscussionId(id: string | null) {
     const oldId = this.currentDiscussionIdBean.get();
@@ -57,189 +74,231 @@ export class DiscussionControlService {
     }
   }
 
-  private createMessage(
-    content: string,
-    agentId: string,
-    type: Message["type"]
-  ): Message {
-    const discussionId = this.currentDiscussionIdBean.get() ?? "";
-    if (!discussionId) {
-      throw new Error("未找到当前讨论");
-    }
-    return {
-      id: nanoid(),
-      agentId,
-      content,
-      type,
-      timestamp: new Date(),
-      discussionId,
-    };
+  setMembers(members: DiscussionMember[]) {
+    this.membersBean.set(members);
+  }
+  
+  setMessages(messages: Message[]) {
+    this.messagesBean.set(messages);
   }
 
-  private addMessage(message: Message) {
-    this.messagesBean.set([...this.messagesBean.get(), message]);
-    this.onMessage$.next(message);
+  removeMember(memberId: string) {
+    const members = this.membersBean.get();
+    this.membersBean.set(members.filter(m => m.agentId !== memberId));
   }
 
-  private async handleModeratorSummary(
-    topic: string,
-    moderator: Agent,
-    settings: DiscussionSettings,
-    participants: Agent[]
+  setTopic(topic: string) {
+    this.topicBean.set(topic);
+  }
+
+  getTopic() {
+    return this.topicBean.get();
+  }
+
+  private async handleModeratorTurn(moderator: Agent, topic: string) {
+    const isFirstRound = this.currentRoundBean.get() === 0;
+    await this.generateAndAddMessage(
+      topic,
+      moderator,
+      isFirstRound ? "text" : "summary",
+      isFirstRound ? "主持人开场失败" : "生成总结失败"
+    );
+  }
+
+  private async handleParticipantTurn(
+    participant: Agent, 
+    topic: string, 
+    index: number
   ) {
-    if (this.isPausedBean.get()) return;
-
-    try {
-      const summary = await aiService.generateModeratorSummary(
-        topic,
-        settings.temperature,
-        this.messagesBean.get(),
-        moderator
-      );
-
-      const summaryMessage = this.createMessage(
-        summary,
-        moderator.id,
-        "summary"
-      );
-      this.addMessage(summaryMessage);
-
-      // 开始新一轮讨论
-      this.lastParticipantIndexBean.set(-1);
-      participants.forEach((_, index) => {
-        this.scheduleParticipantResponse(
-          topic,
-          participants,
-          index,
-          settings,
-          moderator,
-          settings.interval * (index + 1)
-        );
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        this.onError$.next(error);
-      }
+    const member = this.membersBean.get()
+      .find(m => m.agentId === participant.id);
+    
+    if (!member || !member.isAutoReply) {
+      return false;
     }
-  }
 
-  private scheduleParticipantResponse(
-    topic: string,
-    participants: Agent[],
-    index: number,
-    settings: DiscussionSettings,
-    moderator: Agent,
-    delay: number
-  ) {
-    const timeoutId = setTimeout(async () => {
-      if (this.isPausedBean.get()) return;
-
-      const currentAgent = participants[index];
-      if (!currentAgent) return;
-
-      try {
-        const response = await aiService.generateResponse(
-          topic,
-          settings.temperature,
-          this.messagesBean.get(),
-          currentAgent
-        );
-
-        const message = this.createMessage(response, currentAgent.id, "text");
-        this.addMessage(message);
-        this.lastParticipantIndexBean.set(index);
-
-        // 如果是最后一个参与者，让主持人总结
-        if (index === participants.length - 1) {
-          const summaryTimeoutId = setTimeout(() => {
-            this.handleModeratorSummary(
-              topic,
-              moderator,
-              settings,
-              participants
-            );
-          }, settings.interval);
-          this.timeoutIds.push(summaryTimeoutId);
-        }
-      } catch (error) {
-        if (error instanceof Error) {
-          this.onError$.next(error);
-        }
-      }
-    }, delay);
-
-    this.timeoutIds.push(timeoutId);
-  }
-
-  async startDiscussion(topic: string, members: DiscussionMember[]) {
-    this.currentTopic = topic;
-    this.isPausedBean.set(false);
-
-    // 获取所有成员对应的 Agent 信息
-    const agents = await Promise.all(
-      members.map(member => agentService.getAgent(member.agentId))
+    this.currentSpeakerIndexBean.set(index);
+    await this.generateAndAddMessage(
+      topic,
+      participant,
+      "text",
+      "生成回复失败"
+    );
+    
+    await new Promise<void>(resolve => 
+      this.timeoutManager.schedule(
+        resolve, 
+        this.settingsBean.get().interval
+      )
     );
 
-    const moderator = agents.find((agent) => agent.role === "moderator");
-    if (!moderator) {
-      throw new Error("未找到主持人角色");
+    return true;
+  }
+
+  private async runDiscussionRound(
+    moderator: Agent,
+    participants: Agent[],
+    topic: string
+  ) {
+    // 主持人回合
+    await this.handleModeratorTurn(moderator, topic);
+
+    // 参与者回合
+    let activeParticipants = 0;
+    for (let i = 0; i < participants.length; i++) {
+      if (this.isPausedBean.get()) {
+        return false;
+      }
+      
+      const participated = await this.handleParticipantTurn(
+        participants[i],
+        topic,
+        i
+      );
+      
+      if (participated) {
+        activeParticipants++;
+      }
+    }
+
+    return activeParticipants > 0;
+  }
+
+  async run() {
+    if (!this.isPausedBean.get()) {
+      return;
     }
 
     try {
-      if (this.lastParticipantIndexBean.get() === -1) {
-        // 主持人开场
-        const openingMessage = await aiService.generateResponse(
-          topic,
-          this.settingsBean.get().temperature,
-          this.messagesBean.get(),
-          moderator
+      const topic = this.topicBean.get();
+      if (!topic) {
+        throw new DiscussionError(
+          DiscussionErrorType.NO_TOPIC,
+          "未设置讨论主题"
         );
-
-        const message = this.createMessage(
-          openingMessage,
-          moderator.id,
-          "text"
-        );
-        this.addMessage(message);
       }
 
-      // 让参与者轮流发言
-      const participants = agents.filter(
-        (agent) => agent.role === "participant"
-      );
-
-      // 从上次暂停的位置继续
-      const startIndex = Math.max(0, this.lastParticipantIndexBean.get() + 1);
-      for (let i = startIndex; i < participants.length; i++) {
-        this.scheduleParticipantResponse(
-          topic,
-          participants,
-          i,
-          this.settingsBean.get(),
-          moderator,
-          this.settingsBean.get().interval * (i - startIndex + 1)
+      this.isPausedBean.set(false);
+      
+      while (!this.isPausedBean.get()) {
+        // 获取最新成员状态
+        const currentMembers = this.membersBean.get();
+        const currentAgents = await Promise.all(
+          currentMembers.map(member => agentService.getAgent(member.agentId))
         );
+        
+        const moderator = currentAgents.find(agent => agent.role === "moderator");
+        const participants = currentAgents.filter(agent => agent.role === "participant");
+        
+        if (!moderator) {
+          throw new DiscussionError(
+            DiscussionErrorType.NO_MODERATOR,
+            "未找到主持人角色"
+          );
+        }
+
+        // 运行一轮讨论
+        const hasActiveParticipants = await this.runDiscussionRound(
+          moderator,
+          participants,
+          topic
+        );
+
+        if (!hasActiveParticipants) {
+          this.pause();
+          throw new DiscussionError(
+            DiscussionErrorType.NO_PARTICIPANTS,
+            "所有参与者已离开讨论"
+          );
+        }
+
+        this.currentRoundBean.set(this.currentRoundBean.get() + 1);
       }
     } catch (error) {
-      if (error instanceof Error) {
-        this.onError$.next(error);
-      }
+      this.handleError(error, "讨论运行失败", { topic: this.topicBean.get() });
+      this.pause();
+    } finally {
+      this.cleanup();
     }
   }
 
-  stopDiscussion() {
+  pause() {
     this.isPausedBean.set(true);
-    this.timeoutIds.forEach((id) => clearTimeout(id));
-    this.timeoutIds = [];
+    this.cleanup();
+  }
+
+  private cleanup() {
+    this.timeoutManager.clearAll();
+  }
+
+  private async generateAndAddMessage(
+    topic: string,
+    agent: Agent,
+    type: Message["type"],
+    errorMessage: string
+  ) {
+    try {
+      const content = type === "summary"
+        ? await aiService.generateModeratorSummary(
+            topic,
+            this.settingsBean.get().temperature,
+            this.messagesBean.get(),
+            agent
+          )
+        : await aiService.generateResponse(
+            topic,
+            this.settingsBean.get().temperature,
+            this.messagesBean.get(),
+            agent
+          );
+
+      const message = {
+        id: nanoid(),
+        agentId: agent.id,
+        content,
+        type,
+        timestamp: new Date(),
+        discussionId: this.currentDiscussionIdBean.get() ?? "",
+      };
+
+      this.messagesBean.set([...this.messagesBean.get(), message]);
+      this.onMessage$.next(message);
+    } catch (error) {
+      this.handleError(error, errorMessage, { topic, agentId: agent.id });
+      throw error;
+    }
   }
 
   clearMessages() {
+    this.cleanup();
     this.messagesBean.set([]);
-    this.lastParticipantIndexBean.set(-1);
-    this.currentTopic = "";
-    this.currentAgents = [];
+    this.currentRoundBean.set(0);
+    this.currentSpeakerIndexBean.set(-1);
     this.settingsBean.set(DEFAULT_SETTINGS);
     this.currentDiscussionIdBean.set(null);
+  }
+
+  private handleError(
+    error: unknown,
+    message: string,
+    context?: Record<string, unknown>
+  ) {
+    const discussionError =
+      error instanceof DiscussionError
+        ? error
+        : new DiscussionError(
+            DiscussionErrorType.GENERATE_RESPONSE,
+            message,
+            error,
+            context
+          );
+
+    const { shouldPause } = handleDiscussionError(discussionError);
+    if (shouldPause) {
+      this.isPausedBean.set(true);
+    }
+
+    this.onError$.next(discussionError);
   }
 }
 

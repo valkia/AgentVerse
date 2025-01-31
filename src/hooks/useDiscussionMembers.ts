@@ -5,6 +5,7 @@ import { useMemoizedFn } from "ahooks";
 import { useResourceState } from "@/lib/resource";
 import { discussionControlService } from "@/services/discussion-control.service";
 import { useCallback } from "react";
+import { useOptimisticUpdate } from "./useOptimisticUpdate";
 
 interface UseDiscussionMembersProps {
   onChange?: (members: DiscussionMember[]) => void;
@@ -14,6 +15,8 @@ export function useDiscussionMembers({ onChange }: UseDiscussionMembersProps = {
   const resource = useResourceState(discussionMembersResource.current);
   const { data: members = [] } = resource;
 
+  const withOptimisticUpdate = useOptimisticUpdate(resource, { onChange });
+
   const getMembersForDiscussion = useCallback((discussionId: string) => {
     return discussionMemberService.list(discussionId);
   }, []);
@@ -22,23 +25,59 @@ export function useDiscussionMembers({ onChange }: UseDiscussionMembersProps = {
     const discussionId = discussionControlService.getCurrentDiscussionId();
     if (!discussionId) return;
 
-    const member = await discussionMemberService.create(discussionId, agentId, isAutoReply);
-    discussionMembersResource.current.reload();
-    onChange?.(members);
-    return member;
+    const tempId = `temp-${Date.now()}`;
+    const tempMember: DiscussionMember = {
+      id: tempId,
+      discussionId,
+      agentId,
+      isAutoReply,
+      joinedAt: new Date().toISOString()
+    };
+
+    return withOptimisticUpdate(
+      // 乐观更新
+      (members) => [...members, tempMember],
+      // API 调用
+      () => discussionMemberService.create(discussionId, agentId, isAutoReply)
+    );
+  });
+
+  const addMembers = useMemoizedFn(async (members: { agentId: string; isAutoReply: boolean }[]) => {
+    const discussionId = discussionControlService.getCurrentDiscussionId();
+    if (!discussionId) return;
+
+    const tempMembers = members.map((member, index) => ({
+      id: `temp-${Date.now()}-${index}`,
+      discussionId,
+      agentId: member.agentId,
+      isAutoReply: member.isAutoReply,
+      joinedAt: new Date().toISOString()
+    }));
+
+    return withOptimisticUpdate(
+      // 乐观更新
+      (currentMembers) => [...currentMembers, ...tempMembers],
+      // API 调用
+      () => discussionMemberService.createMany(discussionId, members)
+    );
   });
 
   const updateMember = useMemoizedFn(async (memberId: string, data: Partial<DiscussionMember>) => {
-    const member = await discussionMemberService.update(memberId, data);
-    discussionMembersResource.current.reload();
-    onChange?.(members);
-    return member;
+    return withOptimisticUpdate(
+      // 乐观更新
+      (members) => members.map(m => m.id === memberId ? { ...m, ...data } : m),
+      // API 调用
+      () => discussionMemberService.update(memberId, data)
+    );
   });
 
   const removeMember = useMemoizedFn(async (memberId: string) => {
-    await discussionMemberService.delete(memberId);
-    discussionMembersResource.current.reload();
-    onChange?.(members);
+    return withOptimisticUpdate(
+      // 乐观更新
+      (members) => members.filter(m => m.id !== memberId),
+      // API 调用
+      () => discussionMemberService.delete(memberId)
+    );
   });
 
   const toggleAutoReply = useMemoizedFn(async (memberId: string) => {
@@ -52,6 +91,7 @@ export function useDiscussionMembers({ onChange }: UseDiscussionMembersProps = {
     isLoading: resource.isLoading,
     error: resource.error,
     addMember,
+    addMembers,
     updateMember,
     removeMember,
     toggleAutoReply,

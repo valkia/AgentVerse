@@ -4,29 +4,45 @@ import { DiscussionList } from "@/components/discussion/discussion-list";
 import { MemberList } from "@/components/discussion/member-list";
 import { Header } from "@/components/layout/header";
 import { useAgents } from "@/hooks/useAgents";
-import { useDiscussion } from "@/hooks/useDiscussion";
 import { useMessages } from "@/hooks/useMessages";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { discussionControlService } from "@/services/discussion-control.service";
+import { Discussion } from "@/types/discussion";
+import { useEffect } from "react";
+import { useBeanState } from "rx-nested-bean";
 
 export function App() {
   const { isDarkMode, toggleDarkMode, rootClassName } = useTheme();
-  const { agents, getAgentName, getAgentAvatar } = useAgents();
-  const { status, setStatus } = useDiscussion();
+  const { getAgentName, getAgentAvatar } = useAgents();
   const { messages, addMessage } = useMessages();
+  const { data: currentDiscussionId } = useBeanState(
+    discussionControlService.currentDiscussionIdBean
+  );
+  const { data: isPaused, set: setIsPaused } = useBeanState(
+    discussionControlService.isPausedBean
+  );
+  const status = isPaused ? "paused" : "active";
 
-  // 添加主题状态管理
-  const [topic, setTopic] = useState<string>();
+  const handleStatusChange = (status: Discussion["status"]) => {
+    setIsPaused(status === "active");
+  };
 
   // 处理第一条消息，设置为主题
   const handleMessage = async (content: string, agentId: string) => {
     await addMessage(content, agentId);
     // 如果是第一条消息，设置为主题
     if (messages.length === 0) {
-      setTopic(content);
+      discussionControlService.setTopic(content);
     }
   };
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      discussionControlService.setTopic(messages[0].content);
+    }
+    discussionControlService.setMessages(messages);
+  }, [messages]);
 
   return (
     <div
@@ -60,22 +76,20 @@ export function App() {
             data-testid="discussion-controller"
           >
             <DiscussionController
-              topic={topic}
               status={status}
-              onStatusChange={setStatus}
               onSendMessage={addMessage}
             />
           </div>
           <div className="flex-1 min-h-0" data-testid="chat-area">
             <ChatArea
+              key={currentDiscussionId}
               messages={messages}
-              agents={agents}
               onSendMessage={handleMessage}
               getAgentName={getAgentName}
               getAgentAvatar={getAgentAvatar}
               onStartDiscussion={() => {
                 if (status === "paused") {
-                  setStatus("active");
+                  handleStatusChange("active");
                 }
               }}
             />

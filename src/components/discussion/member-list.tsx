@@ -9,6 +9,7 @@ import { useKeyboardExpandableList } from "@/hooks/useKeyboardExpandableList";
 import type { DiscussionMember } from "@/types/discussion-member";
 import { MemberItem } from "./member-item";
 import { MemberSkeleton } from "./member-skeleton";
+import { QuickMemberSelector } from "./quick-member-selector";
 
 interface MemberListProps {
   className?: string;
@@ -71,8 +72,12 @@ export function MemberList({
 
     if (members.length === 0) {
       return (
-        <div className="text-center py-8 text-muted-foreground">
-          暂无成员，点击上方按钮添加
+        <div className="space-y-4 py-8">
+          <div className="text-center text-muted-foreground">
+            <p>选择一个预设组合快速开始</p>
+            <p className="text-sm">或点击上方按钮手动添加成员</p>
+          </div>
+          <QuickMemberSelector />
         </div>
       );
     }

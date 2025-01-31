@@ -231,5 +231,8 @@ export function getAvailableCombinations() {
   }));
 }
 
-// 导出默认组合（为了向后兼容）
-export const DEFAULT_AGENTS = getAgentsByType("creativeIdeation");
+// 导出默认组合（包含所有预设的 agents）
+export const DEFAULT_AGENTS = [
+  ...MODERATORS,
+  ...PARTICIPANTS
+];

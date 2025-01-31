@@ -1,8 +1,7 @@
-import { Agent } from "@/types/agent";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -10,104 +9,99 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Send, Loader2 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useAgents } from "@/hooks/useAgents";
 import { cn } from "@/lib/utils";
+import { Loader2, Send } from "lucide-react";
+import { useRef, useState } from "react";
+import { useMemberSelection, Member } from "@/hooks/useMemberSelection";
 
 interface MessageInputProps {
-  agents: Agent[];
   onSendMessage: (content: string, agentId: string) => Promise<void>;
   className?: string;
   isFirstMessage?: boolean;
-  onStartDiscussion?: () => void;
 }
 
-export function MessageInput({ 
-  agents, 
-  onSendMessage, 
+function AgentSelectItem({ agentId, memberId }: { agentId: string; memberId: string }) {
+  const { getAgentName, getAgentAvatar } = useAgents();
+  
+  return (
+    <SelectItem value={memberId} className="flex items-center">
+      <div className="flex items-center gap-2">
+        <Avatar className="w-5 h-5">
+          <AvatarImage src={getAgentAvatar(agentId)} />
+          <AvatarFallback className="text-xs">
+            {getAgentName(agentId)[0]}
+          </AvatarFallback>
+        </Avatar>
+        <span className="text-sm">{getAgentName(agentId)}</span>
+      </div>
+    </SelectItem>
+  );
+}
+
+export function MessageInput({
+  onSendMessage,
   className,
   isFirstMessage = false,
-  onStartDiscussion
 }: MessageInputProps) {
+  const { agents, getAgentName } = useAgents();
+  const {
+    selectedMemberId,
+    setSelectedMemberId,
+    selectedAgent,
+    availableMembers,
+    isSelectDisabled
+  } = useMemberSelection(isFirstMessage);
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedAgentId, setSelectedAgentId] = useState<string>(() => {
-    // 如果是第一条消息，默认选择主持人
-    if (isFirstMessage) {
-      const moderator = agents.find(a => a.role === 'moderator');
-      return moderator?.id || '';
-    }
-    // 否则默认选择参与者
-    const participant = agents.find(a => a.role === 'participant');
-    return participant?.id || agents[0]?.id || "";
-  });
-  
   const inputRef = useRef<HTMLInputElement>(null);
-  const selectedAgent = agents.find(a => a.id === selectedAgentId);
-
-  useEffect(() => {
-    // 当选择了Agent时自动聚焦输入框
-    if (selectedAgent && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [selectedAgent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() && selectedAgentId && !isLoading) {
-      try {
-        setIsLoading(true);
-        await onSendMessage(input.trim(), selectedAgentId);
-        // 如果是第一条消息，自动启动讨论
-        if (isFirstMessage && onStartDiscussion) {
-          onStartDiscussion();
-        }
-        setInput("");
-      } finally {
-        setIsLoading(false);
-      }
+    if (!canSubmit) return;
+
+    try {
+      setIsLoading(true);
+      await onSendMessage(input.trim(), selectedMemberId);
+      setInput("");
+      inputRef.current?.focus();
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Cmd/Ctrl + Enter 发送消息
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isLoading) {
-      handleSubmit(e);
-    }
-  };
-
-  const canSubmit = selectedAgent && input.trim() && !isLoading;
+  const canSubmit = Boolean(selectedAgent && input.trim() && !isLoading);
+  const inputPlaceholder = isFirstMessage
+    ? "请输入讨论主题，主持人将开启讨论..."
+    : selectedAgent
+    ? `以 ${getAgentName(selectedAgent.id)} 的身份发送消息... (Cmd/Ctrl + Enter 发送)`
+    : "请先选择一个Agent...";
 
   return (
     <div className={cn(className)}>
       <div className="p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Select 
-            value={selectedAgentId} 
-            onValueChange={setSelectedAgentId} 
-            disabled={isLoading || (isFirstMessage && selectedAgent?.role === 'moderator')}
+          <Select
+            value={selectedMemberId}
+            onValueChange={setSelectedMemberId}
+            disabled={isLoading || isSelectDisabled}
           >
             <SelectTrigger className="w-[180px] h-9 text-sm">
               <SelectValue placeholder="选择发送消息的Agent" />
             </SelectTrigger>
             <SelectContent>
-              {agents
-                .filter(agent => !isFirstMessage || agent.role === 'moderator')
-                .map((agent) => (
-                <SelectItem
-                  key={agent.id}
-                  value={agent.id}
-                  className="flex items-center"
-                >
-                  <div className="flex items-center gap-2">
-                    <Avatar className="w-5 h-5">
-                      <AvatarImage src={agent.avatar} />
-                      <AvatarFallback className="text-xs">{agent.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm">{agent.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
+              {availableMembers.map((member: Member) => {
+                const agent = agents.find(a => a.id === member.agentId);
+                if (!agent) return null;
+                return (
+                  <AgentSelectItem 
+                    key={member.agentId}
+                    agentId={agent.id}
+                    memberId={member.agentId}
+                  />
+                );
+              })}
             </SelectContent>
           </Select>
           {selectedAgent && (
@@ -122,14 +116,12 @@ export function MessageInput({
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              isFirstMessage
-                ? "请输入讨论主题，主持人将开启讨论..."
-                : selectedAgent
-                  ? `以 ${selectedAgent.name} 的身份发送消息... (Cmd/Ctrl + Enter 发送)`
-                  : "请先选择一个Agent..."
-            }
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                handleSubmit(e);
+              }
+            }}
+            placeholder={inputPlaceholder}
             className="flex-1 h-9 text-sm"
             disabled={!selectedAgent || isLoading}
           />
@@ -154,4 +146,4 @@ export function MessageInput({
       </div>
     </div>
   );
-} 
+}

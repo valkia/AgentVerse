@@ -27,6 +27,19 @@ export class DiscussionMemberService {
     return this.provider.create(member);
   }
 
+  async createMany(
+    discussionId: string,
+    members: { agentId: string; isAutoReply: boolean }[]
+  ): Promise<DiscussionMember[]> {
+    const memberData = members.map(member => ({
+      discussionId,
+      agentId: member.agentId,
+      isAutoReply: member.isAutoReply,
+      joinedAt: new Date().toISOString(),
+    }));
+    return this.provider.createMany(memberData);
+  }
+
   async update(
     memberId: string,
     data: Partial<DiscussionMember>

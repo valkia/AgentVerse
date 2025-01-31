@@ -1,10 +1,9 @@
+import { useResourceState } from "@/lib/resource";
 import { agentsResource } from "@/resources";
 import { agentService } from "@/services/agent.service";
 import { Agent } from "@/types/agent";
 import { useMemoizedFn } from "ahooks";
-import { useResourceState } from "@/lib/resource";
 import { useOptimisticUpdate } from "./useOptimisticUpdate";
-import { useEffect, useState } from "react";
 
 interface UseAgentsProps {
   onChange?: (agents: Agent[]) => void;
@@ -13,25 +12,8 @@ interface UseAgentsProps {
 export function useAgents({ onChange }: UseAgentsProps = {}) {
   const resource = useResourceState(agentsResource.list);
   const { data: agents } = resource;
-  const [isLoading, setIsLoading] = useState(true);
 
   const withOptimisticUpdate = useOptimisticUpdate(resource, { onChange });
-
-  useEffect(() => {
-    loadAgents();
-  }, []);
-
-  const loadAgents = async () => {
-    try {
-      const agents = await agentService.initialize();
-      setIsLoading(false);
-      return agents;
-    } catch (error) {
-      console.error("Error loading agents:", error);
-      setIsLoading(false);
-      return [];
-    }
-  };
 
   const addAgent = useMemoizedFn(async () => {
     const defaultAgent = agentService.createDefaultAgent();
@@ -74,7 +56,7 @@ export function useAgents({ onChange }: UseAgentsProps = {}) {
 
   return {
     agents,
-    isLoading,
+    isLoading: resource.isLoading,
     error: resource.error,
     addAgent,
     updateAgent,

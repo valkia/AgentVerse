@@ -19,7 +19,6 @@ import { ProviderType } from "@/types/ai";
 // 核心服务类
 class AIService {
   private static readonly MAX_CONTEXT_MESSAGES = 5;
-  private static readonly DEFAULT_MAX_TOKENS = 1000;
 
   constructor(private readonly provider: LLMProvider) {}
 
