@@ -12,6 +12,7 @@ import {
   DiscussionErrorType,
   handleDiscussionError,
 } from "./discussion-error.util";
+import { typingIndicatorService } from "./typing-indicator.service";
 
 class TimeoutManager {
   private timeouts = new Set<NodeJS.Timeout>();
@@ -240,6 +241,7 @@ export class DiscussionControlService {
     errorMessage: string
   ) {
     try {
+      typingIndicatorService.updateStatus(agent.id, 'thinking');
       const content = type === "summary"
         ? await this.aiService.generateModeratorSummary(
             topic,
@@ -268,6 +270,8 @@ export class DiscussionControlService {
     } catch (error) {
       this.handleError(error, errorMessage, { topic, agentId: agent.id });
       throw error;
+    } finally {
+      typingIndicatorService.updateStatus(agent.id, null);
     }
   }
 

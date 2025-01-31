@@ -5,6 +5,8 @@ import { useResourceState } from "@/lib/resource";
 import { useMemoizedFn } from "ahooks";
 import { discussionControlService } from "@/services/discussion-control.service";
 import { useProxyBeanState } from "packages/rx-nested-bean/src";
+import { useOptimisticUpdate } from "./useOptimisticUpdate";
+import { nanoid } from "nanoid";
 
 export function useMessages() {
   const resourceState = useResourceState(messagesResource.current);
@@ -12,6 +14,8 @@ export function useMessages() {
     discussionControlService.store,
     "currentDiscussionId"
   );
+  
+  const withOptimisticUpdate = useOptimisticUpdate(resourceState);
 
   const addMessage = useMemoizedFn(
     async (
@@ -21,16 +25,31 @@ export function useMessages() {
     ) => {
       if (!currentDiscussionId) return;
 
-      const message = await messageService.addMessage(currentDiscussionId, {
-        content,
-        agentId,
-        type,
-        timestamp: new Date(),
-      });
+      const tempId = nanoid();
+      const timestamp = new Date();
 
-      // 触发消息列表重新加载
-      messagesResource.current.reload();
-      return message;
+      return withOptimisticUpdate(
+        // 乐观更新
+        (messages) => [
+          ...messages,
+          {
+            id: tempId,
+            content,
+            agentId,
+            type,
+            timestamp,
+            discussionId: currentDiscussionId,
+          },
+        ],
+        // API 调用
+        () =>
+          messageService.addMessage(currentDiscussionId, {
+            content,
+            agentId,
+            type,
+            timestamp,
+          })
+      );
     }
   );
 

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Message } from "@/types/discussion";
 import { ArrowDown } from "lucide-react";
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { TypingIndicator } from "./typing-indicator";
 
 interface MessageItemProps {
   message: Message;
@@ -105,6 +106,10 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
                     agentInfo={agentInfo}
                   />
                 ))}
+                <TypingIndicator
+                  getMemberName={agentInfo.getName}
+                  getMemberAvatar={agentInfo.getAvatar}
+                />
               </div>
             </div>
           </ScrollableLayout>
