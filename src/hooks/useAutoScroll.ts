@@ -42,7 +42,7 @@ export function useAutoScroll(
 
     container.scrollTo({
       top: container.scrollHeight,
-      behavior: shouldUseInstant ? "auto" : "smooth",
+      behavior: shouldUseInstant ? "instant" : "smooth",
     });
   };
 
