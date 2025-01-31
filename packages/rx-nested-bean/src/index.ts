@@ -484,6 +484,14 @@ export const executeInit = (
 //   };
 // };
 
+interface IWeakRefImpl<T> {
+  deref(): T | undefined;
+}
+
+interface IWeakRefConstructor {
+  new <T>(target: T): IWeakRefImpl<T>;
+}
+
 export const defineBean = <
   T extends Record<string, any>,
   O extends Record<string, any> | void,
@@ -495,20 +503,36 @@ export const defineBean = <
   type TFinalBean = typeof init extends undefined
     ? IWrappedNestedBean<T>
     : IWrappedNestedBean<T> & (O extends void ? object : O);
-  //   const staticEventBus = createEventBus();
-  const instanceRefList: WeakRef<TFinalBean>[] = [];
+  
+  // 使用条件类型存储实例引用
+  const instanceStorage = (() => {
+    const globalWeakRef = (globalThis as any).WeakRef as IWeakRefConstructor | undefined;
+    
+    if (globalWeakRef) {
+      const weakRefs: IWeakRefImpl<TFinalBean>[] = [];
+      return {
+        add: (instance: TFinalBean) => weakRefs.push(new globalWeakRef(instance)),
+        find: (predicate: (bean: TFinalBean) => boolean) => {
+          const ref = weakRefs.find(ref => {
+            const instance = ref.deref();
+            return instance ? predicate(instance) : false;
+          });
+          return ref?.deref();
+        }
+      };
+    } else {
+      const instances: TFinalBean[] = [];
+      return {
+        add: (instance: TFinalBean) => instances.push(instance),
+        find: (predicate: (bean: TFinalBean) => boolean) => instances.find(predicate)
+      };
+    }
+  })();
+
   const create = (...args: TInitArgs): TFinalBean => {
-    // const eventBus = createEventBus();
     const renderingTasks: RenderingTask[] = [];
     const cleanupTasks: CleanupTask[] = [];
-    // eventBus.event$.subscribe(({ key, payload }) => {
-    //
-    //   staticEventBus.emit(key, payload);
-    // });
-    // we don't need to unsubscribe , because it will be unsubscribed when the eventBus is recycled
-    // cleanupTasks.push(() => {
-    //   sub.unsubscribe();
-    // });
+    
     const $cleanup = () => {
       [...cleanupTasks].forEach((cleanup) => {
         cleanup();
@@ -519,10 +543,6 @@ export const defineBean = <
       [...renderingTasks].forEach((render) => {
         render();
       });
-      // strict mode will call the render function twice, which breaks the cleanup logic
-      // useEffect(() => {
-      //   return () => $cleanup();
-      // }, []);
     };
 
     const rawBean = createNestedBean(getData(...args));
@@ -542,17 +562,13 @@ export const defineBean = <
       };
     };
 
-    const $defineMethods = <
-      // T1 extends keyof T2,
-      T2 extends Record<string, AnyFunc>
-    >(
-      // methodNames: T1[],
+    const $defineMethods = <T2 extends Record<string, AnyFunc>>(
       fn: (state: ReturnType<INestedBean<T>["get"]>) => T2
     ) => {
       return new Proxy(
         {},
         {
-          get(target, p: string) {
+          get(_: any, p: string) {
             return (...args: Parameters<T2[typeof p]>) => {
               return fn(rawBean.get())[p](...args);
             };
@@ -562,8 +578,6 @@ export const defineBean = <
     };
 
     const bean = Object.assign(rawBean, {
-      //   $on: eventBus.on,
-      //   $emit: eventBus.emit,
       $cleanup,
       $render,
       $withLatestState,
@@ -573,7 +587,9 @@ export const defineBean = <
     const [instance, renderingTask, cleanupTask] = executeInit(init, bean);
     renderingTasks.push(renderingTask);
     cleanupTasks.push(cleanupTask);
-    instanceRefList.push(new WeakRef(instance));
+    
+    instanceStorage.add(instance);
+    
     return instance;
   };
   const useInstance = (...args: TInitArgs): TFinalBean => {
@@ -586,17 +602,13 @@ export const defineBean = <
   const useExistingInstance = () =>
     useContext(Context) as TFinalBean | undefined;
   const find = (predicate: (bean: TFinalBean) => boolean) => {
-    const instanceRef = instanceRefList.find((instanceRef) =>
-      instanceRef.deref() ? predicate(instanceRef.deref()!) : false
-    );
-    return instanceRef?.deref();
+    return instanceStorage.find(predicate);
   };
   return {
     create,
     useInstance,
     useExistingInstance,
     Provider,
-    // on: staticEventBus.on,
     find,
   };
 };

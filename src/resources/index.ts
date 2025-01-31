@@ -48,6 +48,16 @@ export const discussionsResource = {
         resource.subscribe((state) => {
           // 如果有会话列表，但当前没有选中的会话，则自动选择第一个
           if (
+            !state.data?.length &&
+            !state.isLoading &&
+            !state.error &&
+            !state.isValidating
+          ) {
+            discussionService.createDiscussion("新会话").then(() => {
+              resource.reload();
+            });
+          }
+          if (
             state.data?.length &&
             !discussionControlService.getCurrentDiscussionId()
           ) {
