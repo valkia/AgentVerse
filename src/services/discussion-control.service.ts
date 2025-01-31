@@ -43,6 +43,12 @@ export class DiscussionControlService {
     return this.currentDiscussionIdBean.get();
   }
 
+  getCurrentDiscussionId$()  {
+    return this.currentDiscussionIdBean.$;
+  }
+
+  
+
   setCurrentDiscussionId(id: string | null) {
     const oldId = this.currentDiscussionIdBean.get();
     if (oldId !== id) {

@@ -2,8 +2,8 @@ import { cn } from "@/lib/utils";
 import { Agent } from "@/types/agent";
 import { Message } from "@/types/discussion";
 import { useRef } from "react";
-import { MessageInput } from "./MessageInput";
-import { MessageList, MessageListRef } from "./MessageList";
+import { MessageInput } from "./message-input";
+import { MessageList, MessageListRef } from "./message-list";
 
 interface ChatAreaProps {
   messages: Message[];

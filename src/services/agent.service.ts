@@ -2,9 +2,10 @@ import { DEFAULT_AGENTS } from "@/config/agents";
 import { MockHttpProvider } from "@/lib/storage";
 import { Agent } from "@/types/agent";
 import { AgentDataProvider } from "@/types/storage";
+import { STORAGE_CONFIG } from "@/config/storage";
 
 export class AgentService {
-  constructor(private readonly provider: AgentDataProvider) {}
+  constructor(private provider: AgentDataProvider) {}
 
   async initialize(): Promise<Agent[]> {
     const agents = await this.listAgents();
@@ -84,8 +85,6 @@ export class AgentService {
   }
 }
 
-const createDefaultAgentService = () => {
-  return new AgentService(new MockHttpProvider<Agent>("agents", 200));
-};
-
-export const agentService = createDefaultAgentService();
+export const agentService = new AgentService(
+  new MockHttpProvider<Agent>(STORAGE_CONFIG.KEYS.AGENTS, STORAGE_CONFIG.MOCK_DELAY_MS)
+);

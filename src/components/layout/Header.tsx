@@ -8,10 +8,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { AgentList } from "@/components/agent/AgentList";
+import { AgentList } from "@/components/agent/agent-list";
 import { useAgents } from "@/hooks/useAgents";
 import { useAgentForm } from "@/hooks/useAgentForm";
-import { AgentForm } from "@/components/agent/AgentForm";
+import { AgentForm } from "@/components/agent/agent-form";
 
 interface HeaderProps {
   isDarkMode: boolean;

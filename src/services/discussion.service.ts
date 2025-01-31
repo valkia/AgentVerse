@@ -1,9 +1,10 @@
 import { MockHttpProvider } from "@/lib/storage";
 import { Discussion } from "@/types/discussion";
 import { DiscussionDataProvider } from "@/types/storage";
+import { STORAGE_CONFIG } from "@/config/storage";
 
 export class DiscussionService {
-  constructor(private readonly provider: DiscussionDataProvider) {}
+  constructor(private provider: DiscussionDataProvider) {}
 
   async listDiscussions(): Promise<Discussion[]> {
     return this.provider.list();
@@ -47,5 +48,5 @@ export class DiscussionService {
 
 // 创建服务实例
 export const discussionService = new DiscussionService(
-  new MockHttpProvider<Discussion>("discussions", 200)
+  new MockHttpProvider<Discussion>(STORAGE_CONFIG.KEYS.DISCUSSIONS, STORAGE_CONFIG.MOCK_DELAY_MS)
 );

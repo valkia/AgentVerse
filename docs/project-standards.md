@@ -27,12 +27,13 @@ src/
 ## 命名规范
 
 ### 文件命名
-- 所有文件名统一使用小写字母，单词之间用连字符（-）连接  
+- 所有文件和目录名统一使用小写字母，单词之间用连字符（-）连接
 - 组件文件：`button-primary.tsx`, `user-profile.tsx`
+- 组件目录：`button/`, `user-profile/`
 - 工具文件：`date-formatter.ts`, `string-utils.ts`
 - 样式文件：与组件同名，`button-primary.css`
 - 测试文件：与被测试文件同名，加上.test后缀，`button-primary.test.tsx`
-- 服务文件：使用 `.service.ts` 后缀，如 `authentication.service.ts`, `user.service.ts`
+- 服务文件：使用 `.service.ts` 后缀，如 `authentication.service.ts`
 
 ### 服务类规范
 ```typescript
@@ -53,9 +54,11 @@ export class UserService {
 }
 ```
 
-### 组件命名
-- 组件名使用 PascalCase
-- Props 接口命名为 组件名 + Props（例：`ButtonProps`）
+### 组件命名规范
+- 文件名：使用 kebab-case（例：`user-profile.tsx`）
+- 组件名：使用 PascalCase（例：`export function UserProfile`）
+- Props 接口：使用 PascalCase + Props（例：`interface UserProfileProps`）
+- 目录名：使用 kebab-case（例：`user-profile/index.tsx`）
 
 ### 变量命名
 - 普通变量：使用 camelCase
@@ -74,6 +77,16 @@ export class UserService {
 - Props 必须定义类型接口
 - 使用 ES6+ 语法
 - 优先使用 Hooks 而不是 Class 组件
+
+### 文件大小限制
+- 单个 TSX/TS 文件不应超过 300 行（包含空行和注释）
+- 推荐保持在 150-200 行以内
+- 超过限制时的拆分原则：
+  1. 将独立的 UI 组件拆分到单独文件
+  2. 将复杂的业务逻辑抽离到 hooks
+  3. 将类型定义移到 types 目录
+  4. 将配置项移到 config 目录
+  5. 将工具函数移到 utils 目录
 
 ### 样式规范
 - 使用 Tailwind CSS 工具类

@@ -6,9 +6,9 @@ import { Discussion, DiscussionSettings, Message } from "@/types/discussion";
 import { PauseCircle, PlayCircle, Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useProxyBeanState } from "rx-nested-bean";
-import { SettingSelect } from "./SettingSelect";
-import { SettingSlider } from "./SettingSlider";
-import { SettingSwitch } from "./SettingSwitch";
+import { SettingSelect } from "./setting-select";
+import { SettingSlider } from "./setting-slider";
+import { SettingSwitch } from "./setting-switch";
 
 type ModerationStyle = "strict" | "relaxed";
 

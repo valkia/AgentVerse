@@ -7,6 +7,7 @@ import { messageService } from "@/services/message.service";
 import { Discussion } from "@/types/discussion";
 import { discussionMemberService } from "@/services/discussion-member.service";
 import { DiscussionMember } from "@/types/discussion-member";
+import { filter, firstValueFrom, switchMap } from "rxjs";
 
 // 应用级资源
 export const agentListResource = createResource(() =>
@@ -66,15 +67,22 @@ export const discussionsResource = {
 export const discussionMembersResource = {
   current: createResource<DiscussionMember[]>(
     async () => {
-      const discussionId = discussionControlService.getCurrentDiscussionId();
-      if (!discussionId) return [];
-      return discussionMemberService.list(discussionId);
+      return firstValueFrom(
+        discussionControlService.getCurrentDiscussionId$().pipe(
+          filter(Boolean),
+          switchMap((discussionId) =>
+            discussionMemberService.list(discussionId)
+          )
+        )
+      );
     },
     {
       onCreated: (resource) => {
-        return discussionControlService.onCurrentDiscussionIdChange$.listen(() => {
-          resource.reload();
-        });
+        return discussionControlService.onCurrentDiscussionIdChange$.listen(
+          () => {
+            resource.reload();
+          }
+        );
       },
     }
   ),

@@ -5,7 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SettingItem } from "./SettingItem";
+import { SettingItem } from "./setting-item";
 import { cn } from "@/lib/utils";
 
 export interface Option<T extends string = string> {

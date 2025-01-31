@@ -1,12 +1,10 @@
-import { useState, useEffect } from "react";
-import { Agent } from "@/types/agent";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+import { Agent } from "@/types/agent";
+import { useEffect, useState } from "react";
 
 interface AgentFormProps {
   open: boolean;
@@ -27,7 +26,12 @@ interface AgentFormProps {
   initialData?: Agent;
 }
 
-export function AgentForm({ open, onOpenChange, onSubmit, initialData }: AgentFormProps) {
+export function AgentForm({
+  open,
+  onOpenChange,
+  onSubmit,
+  initialData,
+}: AgentFormProps) {
   const [formData, setFormData] = useState<Omit<Agent, "id">>({
     name: initialData?.name || "",
     avatar: initialData?.avatar || "",
@@ -37,7 +41,6 @@ export function AgentForm({ open, onOpenChange, onSubmit, initialData }: AgentFo
     expertise: initialData?.expertise || [],
     bias: initialData?.bias || "",
     responseStyle: initialData?.responseStyle || "",
-    isAutoReply: initialData?.isAutoReply || true,
   });
 
   useEffect(() => {
@@ -51,7 +54,6 @@ export function AgentForm({ open, onOpenChange, onSubmit, initialData }: AgentFo
         expertise: initialData.expertise,
         bias: initialData.bias,
         responseStyle: initialData.responseStyle,
-        isAutoReply: initialData.isAutoReply,
       });
     }
   }, [initialData]);
@@ -86,7 +88,7 @@ export function AgentForm({ open, onOpenChange, onSubmit, initialData }: AgentFo
                 required
               />
             </div>
-            
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="avatar" className="text-right">
                 头像URL
@@ -198,27 +200,16 @@ export function AgentForm({ open, onOpenChange, onSubmit, initialData }: AgentFo
                 rows={4}
               />
             </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="isAutoReply" className="text-right">
-                自动回复
-              </Label>
-              <div className="col-span-3">
-                <Switch
-                  id="isAutoReply"
-                  checked={formData.isAutoReply}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, isAutoReply: checked })
-                  }
-                />
-              </div>
-            </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               取消
             </Button>
-            <Button 
+            <Button
               type="submit"
               disabled={!formData.name.trim() || !formData.prompt.trim()}
             >
@@ -229,4 +220,4 @@ export function AgentForm({ open, onOpenChange, onSubmit, initialData }: AgentFo
       </DialogContent>
     </Dialog>
   );
-} 
+}

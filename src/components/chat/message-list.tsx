@@ -4,7 +4,7 @@ import { Markdown } from "@/components/ui/markdown";
 import {
   ScrollableLayout,
   ScrollableLayoutRef,
-} from "@/layouts/ScrollableLayout";
+} from "@/layouts/scrollable-layout";
 import { cn } from "@/lib/utils";
 import { Message } from "@/types/discussion";
 import { ArrowDown } from "lucide-react";

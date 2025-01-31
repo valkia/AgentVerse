@@ -1,5 +1,5 @@
 import { Switch } from "@/components/ui/switch";
-import { SettingItem } from "./SettingItem";
+import { SettingItem } from "./setting-item";
 import { cn } from "@/lib/utils";
 
 export interface SettingSwitchProps {

@@ -1,6 +1,7 @@
 import { MockHttpProvider } from "@/lib/storage";
 import { DiscussionMember } from "@/types/discussion-member";
 import { DiscussionMemberDataProvider } from "@/types/storage";
+import { STORAGE_CONFIG } from "@/config/storage";
 import { nanoid } from "nanoid";
 
 export class DiscussionMemberService {
@@ -39,5 +40,5 @@ export class DiscussionMemberService {
 }
 
 export const discussionMemberService = new DiscussionMemberService(
-  new MockHttpProvider<DiscussionMember>("discussion-members", 200)
+  new MockHttpProvider<DiscussionMember>(STORAGE_CONFIG.KEYS.DISCUSSION_MEMBERS, STORAGE_CONFIG.MOCK_DELAY_MS)
 );
