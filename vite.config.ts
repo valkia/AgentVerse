@@ -4,5 +4,14 @@ import tsconfigPaths from "vite-tsconfig-paths"
 
 export default defineConfig({
   base: "/muti-chat/",
-  plugins: [react(), tsconfigPaths()],
+  plugins: [
+    react({
+      babel: {
+        plugins: [
+          ["@babel/plugin-proposal-decorators", { version: "2023-05" }]
+        ]
+      }
+    }), 
+    tsconfigPaths()
+  ],
 })
