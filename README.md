@@ -19,7 +19,7 @@
 
 ### 在线体验
 
-访问我们的在线演示：[Demo Link]
+访问我们的在线演示：[Demo Link](https://apps.eiooie.com/muti-chat/)
 
 ### 本地运行
 
