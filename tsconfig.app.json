@@ -7,6 +7,7 @@
     "skipLibCheck": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "incremental": false,
 
     /* Bundler mode */
     "moduleResolution": "bundler",
