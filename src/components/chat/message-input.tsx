@@ -1,42 +1,16 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAgents } from "@/hooks/useAgents";
+import { useMemberSelection } from "@/hooks/useMemberSelection";
 import { cn } from "@/lib/utils";
 import { Loader2, Send } from "lucide-react";
 import { useRef, useState } from "react";
-import { useMemberSelection, Member } from "@/hooks/useMemberSelection";
+import { MemberSelector } from "./member-selector";
 
 interface MessageInputProps {
   onSendMessage: (content: string, agentId: string) => Promise<void>;
   className?: string;
   isFirstMessage?: boolean;
-}
-
-function AgentSelectItem({ agentId, memberId }: { agentId: string; memberId: string }) {
-  const { getAgentName, getAgentAvatar } = useAgents();
-  
-  return (
-    <SelectItem value={memberId} className="flex items-center">
-      <div className="flex items-center gap-2">
-        <Avatar className="w-5 h-5">
-          <AvatarImage src={getAgentAvatar(agentId)} />
-          <AvatarFallback className="text-xs">
-            {getAgentName(agentId)[0]}
-          </AvatarFallback>
-        </Avatar>
-        <span className="text-sm">{getAgentName(agentId)}</span>
-      </div>
-    </SelectItem>
-  );
 }
 
 export function MessageInput({
@@ -71,45 +45,27 @@ export function MessageInput({
     }
   };
 
-  const canSubmit = Boolean(selectedAgent && input.trim() && !isLoading);
+  const canSubmit = Boolean((selectedAgent || selectedMemberId === 'self') && input.trim() && !isLoading);
   const inputPlaceholder = isFirstMessage
     ? "请输入讨论主题，主持人将开启讨论..."
+    : selectedMemberId === 'self'
+    ? "以我的身份发送消息... (Cmd/Ctrl + Enter 发送)"
     : selectedAgent
     ? `以 ${getAgentName(selectedAgent.id)} 的身份发送消息... (Cmd/Ctrl + Enter 发送)`
-    : "请先选择一个Agent...";
+    : "请先选择发送者...";
 
   return (
     <div className={cn(className)}>
       <div className="p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Select
-            value={selectedMemberId}
-            onValueChange={setSelectedMemberId}
-            disabled={isLoading || isSelectDisabled}
-          >
-            <SelectTrigger className="w-[180px] h-9 text-sm">
-              <SelectValue placeholder="选择发送消息的Agent" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableMembers.map((member: Member) => {
-                const agent = agents.find(a => a.id === member.agentId);
-                if (!agent) return null;
-                return (
-                  <AgentSelectItem 
-                    key={member.agentId}
-                    agentId={agent.id}
-                    memberId={member.agentId}
-                  />
-                );
-              })}
-            </SelectContent>
-          </Select>
-          {selectedAgent && (
-            <Badge variant="outline" className="h-5 text-xs font-normal">
-              {selectedAgent.role === "moderator" ? "主持人" : "参与者"}
-            </Badge>
-          )}
-        </div>
+        <MemberSelector
+          selectedMemberId={selectedMemberId}
+          setSelectedMemberId={setSelectedMemberId}
+          selectedAgent={selectedAgent || undefined}
+          availableMembers={availableMembers}
+          agents={agents}
+          isLoading={isLoading}
+          isSelectDisabled={isSelectDisabled}
+        />
 
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
@@ -123,7 +79,7 @@ export function MessageInput({
             }}
             placeholder={inputPlaceholder}
             className="flex-1 h-9 text-sm"
-            disabled={!selectedAgent || isLoading}
+            disabled={!selectedMemberId || isLoading}
           />
           <Button
             type="submit"

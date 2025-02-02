@@ -2,13 +2,22 @@ import {
   CapabilityRegistry,
   generateCapabilityPrompt,
 } from "@/lib/capabilities";
-import { agentListResource, messagesResource } from "@/resources";
+import {
+  agentListResource,
+  discussionMembersResource,
+  messagesResource,
+} from "@/resources";
 import { aiService } from "@/services/ai.service";
 import { discussionControlService } from "@/services/discussion-control.service";
 import { messageService } from "@/services/message.service";
 import { Agent } from "@/types/agent";
 import { AgentMessage } from "@/types/discussion";
-import { DiscussionKeys, IDiscussionEnvBus, SpeakReason, SpeakRequest } from './discussion/discussion-env';
+import {
+  DiscussionKeys,
+  IDiscussionEnvBus,
+  SpeakReason,
+  SpeakRequest,
+} from "./discussion/discussion-env";
 import { MENTION_RULE } from "./rules/constants";
 import { createKey } from "./typed-bus";
 
@@ -216,7 +225,10 @@ export abstract class BaseAgent<S extends BaseAgentState = BaseAgentState> {
   private async speak(message: AgentMessage): Promise<void> {
     let agentMessage: AgentMessage | null = null;
     try {
-      this.env.stateBus.set(DiscussionKeys.States.speaking, this.config.agentId);
+      this.env.stateBus.set(
+        DiscussionKeys.States.speaking,
+        this.config.agentId
+      );
       this.setState({ isThinking: true } as Partial<S>);
 
       const response = await this.generateResponse(message);
@@ -237,29 +249,32 @@ export abstract class BaseAgent<S extends BaseAgentState = BaseAgentState> {
   }
 
   private getSpeakReason(message: AgentMessage): SpeakReason {
-    const isMentioned = this.checkIfMentioned(message.content, this.config.name);
-    
+    const isMentioned = this.checkIfMentioned(
+      message.content,
+      this.config.name
+    );
+
     if (isMentioned) {
       return {
-        type: 'mentioned',
-        description: '被直接提及',
+        type: "mentioned",
+        description: "被直接提及",
         factors: {
-          isModerator: this.config.role === 'moderator',
+          isModerator: this.config.role === "moderator",
           isContextRelevant: 1,
-        }
+        },
       };
     }
 
     return {
-      type: 'auto_reply',
-      description: '自动回复',
+      type: "auto_reply",
+      description: "自动回复",
       factors: {
-        isModerator: this.config.role === 'moderator',
+        isModerator: this.config.role === "moderator",
         isContextRelevant: 0.5,
-        timeSinceLastSpeak: this.state.lastSpeakTime 
+        timeSinceLastSpeak: this.state.lastSpeakTime
           ? Date.now() - this.state.lastSpeakTime.getTime()
-          : Infinity
-      }
+          : Infinity,
+      },
     };
   }
 
@@ -289,11 +304,8 @@ export abstract class BaseAgent<S extends BaseAgentState = BaseAgentState> {
   private cleanupHandlers: Array<() => void> = [];
 
   // 检查消息中是否 @ 了当前 agent
-  private checkIfMentioned(content: string, name:string): boolean {
-    const mentionPattern = new RegExp(
-      `@(?:"${name}"|'${name}'|${name})`,
-      "i"
-    );
+  private checkIfMentioned(content: string, name: string): boolean {
+    const mentionPattern = new RegExp(`@(?:"${name}"|'${name}'|${name})`, "i");
     return mentionPattern.test(content);
   }
 }
@@ -308,6 +320,9 @@ export const Keys = {
     speaking: createKey<string | null>("speaking"),
   },
 };
+
+// 添加系统默认 prompt 常量
+const SYSTEM_BASE_PROMPT = `你是 {{agent.name}}`;
 
 /**
  * 示例：一个简单的聊天Agent
@@ -345,25 +360,30 @@ export class ChatAgent extends BaseAgent {
     }
   };
 
-  protected async generateResponse(
-    message: AgentMessage
-  ): Promise<string | null> {
+  protected async generateResponse(): Promise<string | null> {
     const discussionId = discussionControlService.getCurrentDiscussionId();
     if (!discussionId) return null;
 
     const messages = await messageService.listMessages(discussionId);
     const agentList = agentListResource.read().data;
+    const memberAgents = (
+      await discussionMembersResource.current.whenReady()
+    ).map((member) => agentList.find((agent) => agent.id === member.agentId)!);
     const getAgentName = (agentId: string) => {
       const agent = agentList.find((agent) => agent.id === agentId);
       return agent?.name ?? agentId;
     };
 
-    // 构建系统提示
-    let systemPrompt = this.getPrompt();
+    // 修改系统提示的构建逻辑
+    let systemPrompt = [
+      this.processPromptTemplate(SYSTEM_BASE_PROMPT),  // 添加基础系统 prompt
+      this.getPrompt()     // 添加特定 agent 的 prompt
+    ].join("\n\n");
+
     if (this.config.role === "moderator") {
       systemPrompt = [
         systemPrompt,
-        MENTION_RULE.generatePrompt(agentList),
+        MENTION_RULE.generatePrompt(memberAgents),
         generateCapabilityPrompt(
           CapabilityRegistry.getInstance().getCapabilities()
         ),
@@ -373,17 +393,13 @@ export class ChatAgent extends BaseAgent {
     const chatMessages = messages
       .slice(-(this.config.conversation?.contextMessages ?? 10))
       .map((msg) => ({
-        role:
-          msg.agentId === this.config.agentId
-            ? ("assistant" as const)
-            : ("user" as const),
+        role: "system" as const,
         content: `${getAgentName(msg.agentId)}: ${msg.content}`,
       }));
 
     const initialResponse = await aiService.chatCompletion([
       { role: "system", content: systemPrompt },
       ...chatMessages,
-      { role: "user", content: message.content },
     ]);
     return initialResponse;
   }

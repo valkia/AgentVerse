@@ -42,7 +42,7 @@ export function QuickMemberSelector({ onSelect }: QuickMemberSelectorProps) {
 
       participantAgents.forEach(agent => {
         if (agent) {
-          membersToAdd.push({ agentId: agent.id, isAutoReply: true });
+          membersToAdd.push({ agentId: agent.id, isAutoReply: false });
         }
       });
 

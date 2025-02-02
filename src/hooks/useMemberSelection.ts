@@ -1,13 +1,34 @@
-import { useObservableState } from "@/hooks/useObservableState";
 import { discussionControlService } from "@/services/discussion-control.service";
-import { useCallback, useEffect, useMemo } from "react";
+import { Agent } from "@/types/agent";
+import { useEffect, useMemo, useState } from "react";
 import { useBeanState } from "rx-nested-bean";
 import { useAgents } from "./useAgents";
 import { useDiscussionMembers } from "./useDiscussionMembers";
 
 export interface Member {
   agentId: string;
+  role?: string;
+  isSelf?: boolean;
 }
+
+// 定义用户自己的成员常量
+const SELF_MEMBER: Member = {
+  agentId: "user",
+  role: "user",
+  isSelf: true,
+};
+
+const SELF_AGENT: Agent = {
+  id: "user",
+  name: "我",
+  avatar: "",
+  prompt: "",
+  role: "moderator",
+  personality: "",
+  bias: "",
+  responseStyle: "",
+  expertise: [],
+};
 
 export function useMemberSelection(isFirstMessage: boolean = false) {
   const { agents } = useAgents();
@@ -16,62 +37,44 @@ export function useMemberSelection(isFirstMessage: boolean = false) {
     discussionControlService.currentDiscussionIdBean
   );
 
-  // 根据角色获取合适的成员
-  const getDefaultMember = useCallback(() => {
-    const role = isFirstMessage ? "moderator" : "participant";
-    return (
-      members.find((m) => {
-        const agent = agents.find((a) => a.id === m.agentId);
-        return agent?.role === role;
-      }) || members[0]
-    );
-  }, [agents, isFirstMessage, members]);
-
-  // 可用成员列表
+  // 可用成员列表，添加"我"的选项
   const availableMembers = useMemo(() => {
     if (isFirstMessage) {
-      return members.filter(
+      const moderators = members.filter(
         (m) => agents.find((a) => a.id === m.agentId)?.role === "moderator"
       );
+      return [SELF_MEMBER, ...moderators];
     }
-    return members;
+    return [SELF_MEMBER, ...members];
   }, [agents, isFirstMessage, members]);
 
-  // 选中的成员 ID 管理
-  const [selectedMemberId, setSelectedMemberId] = useObservableState(
-    () => getDefaultMember()?.agentId || ""
-  );
+  // 直接将初始值设置为 SELF_MEMBER.agentId
+  const [selectedMemberId, setSelectedMemberId] = useState(SELF_MEMBER.agentId);
 
   // 当前选中的 agent
   const selectedAgent = useMemo(
-    () => agents.find((a) => a.id === selectedMemberId),
+    () => agents.concat(SELF_AGENT).find((a) => a.id === selectedMemberId),
     [agents, selectedMemberId]
   );
 
-  // 讨论变更或成员不存在时重置选择
+  // 修改重置逻辑，移除自动重置的部分，因为我们希望保持用户选择
   useEffect(() => {
     const shouldReset =
-      !selectedMemberId ||
-      !members.find((m) => m.agentId === selectedMemberId) ||
-      currentDiscussionId;
+      currentDiscussionId &&
+      selectedMemberId !== SELF_MEMBER.agentId &&
+      (!selectedMemberId ||
+        !members.find((m) => m.agentId === selectedMemberId));
 
     if (shouldReset) {
-      const defaultMember = getDefaultMember();
-      setSelectedMemberId(defaultMember?.agentId || "");
+      setSelectedMemberId(SELF_MEMBER.agentId);
     }
-  }, [
-    currentDiscussionId,
-    getDefaultMember,
-    members,
-    selectedMemberId,
-    setSelectedMemberId,
-  ]);
+  }, [currentDiscussionId, members, selectedMemberId]);
 
   return {
     selectedMemberId,
     setSelectedMemberId,
     selectedAgent,
     availableMembers,
-    isSelectDisabled: isFirstMessage && selectedAgent?.role === "moderator",
+    isSelectDisabled: false,
   };
 }

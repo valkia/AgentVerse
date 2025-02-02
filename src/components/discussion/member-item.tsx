@@ -4,7 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Agent } from "@/types/agent";
 import { DiscussionMember } from "@/types/discussion-member";
-import { ChevronRight, UserX } from "lucide-react";
+import { ChevronRight, UserX, Settings, Briefcase, Lightbulb, Target } from "lucide-react";
 
 interface MemberItemProps {
   member: DiscussionMember;
@@ -13,7 +13,97 @@ interface MemberItemProps {
   onExpand: () => void;
   onToggleAutoReply: () => void;
   onRemove: (e: React.MouseEvent) => void;
+  onEditAgent: () => void;
   className?: string;
+}
+
+function MemberExpandedContent({
+  member,
+  agent,
+  onEditAgent,
+  onRemove
+}: Pick<MemberItemProps, 'member' | 'agent' | 'onEditAgent' | 'onRemove'>) {
+  return (
+    <div className="px-4 pb-4 border-t bg-muted/5 space-y-4">
+      <div className="pt-3 space-y-1">
+        <h4 className="text-sm font-medium">个性描述</h4>
+        <p className="text-sm text-muted-foreground">
+          {agent.personality}
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 text-sm font-medium">
+            <Briefcase className="w-4 h-4" />
+            <span>专业领域</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {agent.expertise.map((item, index) => (
+              <span 
+                key={index}
+                className="px-2 py-0.5 text-xs rounded-md bg-muted/50 text-muted-foreground"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 text-sm font-medium">
+            <Target className="w-4 h-4" />
+            <span>偏好倾向</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {agent.bias || '无特定偏好'}
+          </p>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 text-sm font-medium">
+            <Lightbulb className="w-4 h-4" />
+            <span>回复风格</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {agent.responseStyle || '标准风格'}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pt-2 border-t border-border/30">
+        <span className="text-xs text-muted-foreground/70">
+          {new Date(member.joinedAt).toLocaleString('zh-CN', { 
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric'
+          })} 加入
+        </span>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditAgent();
+            }}
+            className="h-7 px-2 text-muted-foreground hover:text-foreground"
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onRemove}
+            className="h-7 px-2 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+          >
+            <UserX className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function MemberItem({
@@ -23,6 +113,7 @@ export function MemberItem({
   onExpand,
   onToggleAutoReply,
   onRemove,
+  onEditAgent,
   className,
   ...props
 }: MemberItemProps) {
@@ -86,29 +177,12 @@ export function MemberItem({
         )}
       >
         <div className="overflow-hidden">
-          <div className="px-4 pb-4 border-t bg-muted/5 space-y-3">
-            <p className="text-sm text-muted-foreground pt-3">
-              {agent.personality}
-            </p>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground/70">
-                {new Date(member.joinedAt).toLocaleString('zh-CN', { 
-                  month: 'numeric',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: 'numeric'
-                })} 加入
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onRemove}
-                className="h-7 px-2 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-              >
-                <UserX className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
+          <MemberExpandedContent
+            member={member}
+            agent={agent}
+            onEditAgent={onEditAgent}
+            onRemove={onRemove}
+          />
         </div>
       </div>
     </Card>

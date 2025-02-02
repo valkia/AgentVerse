@@ -177,7 +177,6 @@ export class DiscussionControlService {
       // 检查当前成员数量
       const currentMembers = this.membersBean.get();
       let selectedIds: string[] = [];
-      let needUpdateMembers = false;
 
       if (currentMembers.length > 1) {
         // 如果已有足够成员，直接使用现有成员
@@ -186,7 +185,7 @@ export class DiscussionControlService {
         // 否则使用选择器选择新成员
         const availableAgents = agentListResource.read().data;
         selectedIds = await agentSelector.selectAgents(topic, availableAgents);
-        needUpdateMembers = true;
+        await this.updateDiscussionMembers(selectedIds);
       }
 
       if (selectedIds.length === 0) {
@@ -195,12 +194,6 @@ export class DiscussionControlService {
           "没有合适的参与者"
         );
       }
-
-      // 只在需要时更新成员
-      if (needUpdateMembers) {
-        await this.updateDiscussionMembers(selectedIds);
-      }
-
       // 开始讨论
       this.isPausedBean.set(false);
 
@@ -212,7 +205,7 @@ export class DiscussionControlService {
       if (moderator) {
         this.env.eventBus.emit(Keys.Events.message, {
           agentId: "system",
-          content: `让我们开始讨论主题：${topic}`,
+          content: `用户：${topic}`,
           type: "text",
           id: "system",
           discussionId: this.getCurrentDiscussionId()!,

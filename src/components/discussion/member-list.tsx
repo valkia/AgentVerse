@@ -10,6 +10,8 @@ import type { DiscussionMember } from "@/types/discussion-member";
 import { MemberItem } from "./member-item";
 import { MemberSkeleton } from "./member-skeleton";
 import { QuickMemberSelector } from "./quick-member-selector";
+import { useAgentForm } from "@/hooks/useAgentForm";
+import { AgentForm } from "@/components/agent/agent-form";
 
 interface MemberListProps {
   className?: string;
@@ -23,7 +25,14 @@ export function MemberList({
   listClassName
 }: MemberListProps) {
   const { members, isLoading, removeMember, toggleAutoReply } = useDiscussionMembers();
-  const { agents } = useAgents();
+  const { agents, updateAgent } = useAgents();
+  const {
+    isFormOpen,
+    setIsFormOpen,
+    editingAgent,
+    handleEditAgent,
+    handleSubmit,
+  } = useAgentForm(agents, updateAgent);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -100,6 +109,7 @@ export function MemberList({
             e.stopPropagation();
             removeMember(member.id);
           }}
+          onEditAgent={() => handleEditAgent(agent)}
           {...getItemProps(index)}
         />
       );
@@ -107,17 +117,26 @@ export function MemberList({
   };
 
   return (
-    <div className={cn("flex flex-col h-full overflow-hidden", className)}>
-      {renderHeader()}
-      <div className={cn("flex-1 min-h-0 overflow-y-auto px-0.5", listClassName)}>
-        <div className="space-y-2 pb-4">
-          {renderContent()}
+    <>
+      <div className={cn("flex flex-col h-full overflow-hidden", className)}>
+        {renderHeader()}
+        <div className={cn("flex-1 min-h-0 overflow-y-auto px-0.5", listClassName)}>
+          <div className="space-y-2 pb-4">
+            {renderContent()}
+          </div>
         </div>
+        <AddMemberDialog
+          open={showAddDialog}
+          onOpenChange={setShowAddDialog}
+        />
       </div>
-      <AddMemberDialog
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
+
+      <AgentForm
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        onSubmit={handleSubmit}
+        initialData={editingAgent}
       />
-    </div>
+    </>
   );
 } 

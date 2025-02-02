@@ -122,9 +122,6 @@ function DiscussionItem({ discussion, isActive, onClick, onRename, onDelete }: D
             onEditEnd={() => setIsEditing(false)}
           />
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground capitalize">
-              {discussion.status}
-            </span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
