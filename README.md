@@ -4,7 +4,7 @@
 
 [English](./README_EN.md) | 简体中文
 
-![演示截图](./screenshots/demo.png)
+![演示截图](./screenshots/demo.jpeg)
 
 ## ✨ 特性
 

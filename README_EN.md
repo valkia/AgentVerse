@@ -4,7 +4,7 @@ A React-based intelligent agent discussion platform powered by DeepSeek API, ena
 
 English | [简体中文](./README.md)
 
-![Demo Screenshot](./screenshots/demo.png)
+![Demo Screenshot](./screenshots/demo.jpeg)
 
 ## ✨ Features
 
