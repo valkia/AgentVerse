@@ -1,6 +1,6 @@
 import { TypedEventEmitter } from '../base';
 import { skipMiddleware, syncMethod } from '../decorators';
-import { IInternalStateBus, IObservable, ITypedKey } from '../types';
+import { IInternalStateBus, IObservable, IObserver, ITypedKey } from '../types';
 
 export class StateBus extends TypedEventEmitter implements IInternalStateBus {
     states = new Map<string, unknown>();
@@ -23,8 +23,14 @@ export class StateBus extends TypedEventEmitter implements IInternalStateBus {
     @skipMiddleware()
     watch<T>(key: ITypedKey<T>): IObservable<T> {
         return {
-            subscribe: (observer) => {
-                const handler = (value: T) => observer.next(value);
+            subscribe: (observer: IObserver<T> | ((data: T) => void)) => {
+                const handler = (value: T) => {
+                    if (typeof observer === 'function') {
+                        observer(value);
+                    } else {
+                        observer.next(value);
+                    }
+                };
                 this.on(key, handler);
                 return {
                     unsubscribe: () => {

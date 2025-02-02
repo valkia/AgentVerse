@@ -107,7 +107,7 @@ export function MemberList({
   };
 
   return (
-    <div className={cn("flex flex-col flex-1 overflow-hidden", className)}>
+    <div className={cn("flex flex-col h-full overflow-hidden", className)}>
       {renderHeader()}
       <div className={cn("flex-1 min-h-0 overflow-y-auto px-0.5", listClassName)}>
         <div className="space-y-2 pb-4">

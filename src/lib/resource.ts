@@ -26,7 +26,7 @@ export interface ResourceOptions<T> {
   onCreated?: (resource: ResourceManagerImpl<T>) => void; // 资源创建后的回调
 }
 
-export interface IResourceManager<T> {
+export interface IResource<T> {
   read(): ReadyResourceState<T>;
   reload(): Promise<T>;
 }
@@ -37,7 +37,7 @@ const DEFAULT_OPTIONS: ResourceOptions<unknown> = {
   retryDelay: 1000,
 };
 
-export class ResourceManagerImpl<T> implements IResourceManager<T> {
+export class ResourceManagerImpl<T> implements IResource<T> {
   private state: ResourceState<T> = {
     data: null,
     isLoading: true,
@@ -167,6 +167,45 @@ export class ResourceManagerImpl<T> implements IResourceManager<T> {
       await this.reload();
     }
   }
+
+  /**
+   * 等待资源就绪并返回数据
+   * @param timeout 超时时间（毫秒），默认 30000ms
+   * @returns 资源数据
+   * @throws 如果超时或加载出错
+   */
+  async whenReady(timeout: number = 30000): Promise<T> {
+    return new Promise((resolve, reject) => {
+      // 如果已经就绪，直接返回数据
+      if (!this.state.isLoading && !this.state.error && this.state.data !== null) {
+        resolve(this.state.data);
+        return;
+      }
+
+      // 设置超时
+      const timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error('Resource loading timeout'));
+      }, timeout);
+
+      // 订阅状态变化
+      const unsubscribe = this.subscribe((state) => {
+        if (!state.isLoading && !state.error && state.data !== null) {
+          cleanup();
+          resolve(state.data);
+        } else if (state.error) {
+          cleanup();
+          reject(state.error);
+        }
+      });
+
+      // 清理函数
+      const cleanup = () => {
+        clearTimeout(timeoutId);
+        unsubscribe();
+      };
+    });
+  }
 }
 
 // React Hook
@@ -211,7 +250,8 @@ export function useParameterizedResource<T, P>(
   const resource = useMemo(() => {
     if (!params) {
       // 当参数为空时，创建一个返回默认值的资源
-      const fallbackValue = typeof fallback === 'function' ? (fallback as () => T)() : fallback;
+      const fallbackValue =
+        typeof fallback === "function" ? (fallback as () => T)() : fallback;
       return createResource<T>(() => Promise.resolve(fallbackValue));
     }
     return resourceFactory(params);

@@ -14,12 +14,12 @@ export interface ISubscription {
 }
 
 export interface IObservable<T> {
-  subscribe: (observer: IObserver<T>) => ISubscription;
+  subscribe: (observer: IObserver<T> | ((data: T) => void)) => ISubscription;
 }
 
 export interface IEventBus {
   emit<T>(key: ITypedKey<T>, data: T): void;
-  on<T>(key: ITypedKey<T>, handler: (data: T) => void): void;
+  on<T>(key: ITypedKey<T>, handler: (data: T) => void): () => void;
   off<T>(key: ITypedKey<T>, handler: (data: T) => void): void;
   observe<T>(key: ITypedKey<T>): IObservable<T>;
 }
@@ -34,7 +34,7 @@ export interface IStateBus {
 export interface IMessageBus {
   send<T>(key: ITypedKey<T>, data: T): Promise<void>;
   receive<T>(key: ITypedKey<T>): Promise<T[]>;
-  subscribe<T>(key: ITypedKey<T>): IObservable<T>;
+  observe<T>(key: ITypedKey<T>): IObservable<T>;
   clear<T>(key: ITypedKey<T>): Promise<void>;
 }
 
@@ -91,13 +91,13 @@ export interface IMiddleware<TBefore = unknown, TAfter = TBefore> {
 }
 
 export interface IEnvironmentBus {
-  event: IEventBus;
-  state: IStateBus;
-  message: IMessageBus;
-  resource: IResourceBus;
-  capability: ICapabilityBus;
+  eventBus: IEventBus;
+  stateBus: IStateBus;
+  messageBus: IMessageBus;
+  resourceBus: IResourceBus;
+  capabilityBus: ICapabilityBus;
 
-  use(middleware: IMiddleware<unknown>): void;
+  use(middleware: IMiddleware<unknown>): () => void;
   removeMiddleware(middleware: IMiddleware<unknown>): void;
   reset(): Promise<void>;
   status(): IBusStatus;

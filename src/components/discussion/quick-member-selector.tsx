@@ -37,13 +37,11 @@ export function QuickMemberSelector({ onSelect }: QuickMemberSelectorProps) {
       const membersToAdd = [];
       
       if (moderatorAgent) {
-        console.log('Adding moderator:', moderatorAgent.name);
         membersToAdd.push({ agentId: moderatorAgent.id, isAutoReply: true });
       }
 
       participantAgents.forEach(agent => {
         if (agent) {
-          console.log('Adding participant:', agent.name);
           membersToAdd.push({ agentId: agent.id, isAutoReply: true });
         }
       });
@@ -54,7 +52,6 @@ export function QuickMemberSelector({ onSelect }: QuickMemberSelectorProps) {
 
       // 批量添加所有成员
       await addMembers(membersToAdd);
-      console.log('All members added successfully');
       onSelect?.();
     } catch (error) {
       console.error('Error adding members:', error);

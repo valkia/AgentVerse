@@ -22,7 +22,6 @@ export const agentListResource = createResource(() =>
         )
     );
     if (missingAgents.length > 0) {
-      console.log(`Creating ${missingAgents.length} missing agents...`);
       await Promise.all(
         missingAgents.map((agent) => agentService.createAgent(agent))
       );

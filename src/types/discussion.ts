@@ -1,10 +1,11 @@
-export interface Message {
+export interface AgentMessage {
   id: string;
   discussionId: string;  // 关联到具体会话
   agentId: string;
   content: string;
+  type: "text" | "image" | "audio" | "video";
   timestamp: Date;
-  type: 'text' | 'summary' | 'question' | 'conclusion';
+  mentions?: string[]; // 被 @ 的 agentId 列表
   replyTo?: string;  // 回复某条消息的ID
 }
 

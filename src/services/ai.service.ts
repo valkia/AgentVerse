@@ -9,12 +9,13 @@ import {
   ChatMessage,
   DirectAPIAdapter,
   LLMProvider,
+  MessageConverter,
   ProxyAPIAdapter,
   StandardProvider
 } from "@/lib/ai-service";
 import { Agent } from "@/types/agent";
-import { Message as AgentMessage } from "@/types/discussion";
 import { ProviderType } from "@/types/ai";
+import { AgentMessage } from "@/types/discussion";
 
 // 消息处理器接口
 export interface MessageProcessor {
@@ -48,12 +49,14 @@ export class AIService {
   private static readonly MAX_CONTEXT_MESSAGES = 5;
   private messageProcessors: MessageProcessor[] = [];
   private members: Agent[] = [];
+  private messageConverter: MessageConverter;
 
   constructor(
     private readonly provider: LLMProvider,
     processors: MessageProcessor[] = [new WordLimitProcessor()]
   ) {
     this.messageProcessors = processors;
+    this.messageConverter = new MessageConverter();
   }
 
   // 更新成员列表
@@ -109,22 +112,13 @@ export class AIService {
     messages: AgentMessage[],
     currentAgentId: string
   ): ChatMessage[] {
-    return [
-      { role: "system", content: systemPrompt } as ChatMessage,
-      ...messages.slice(-AIService.MAX_CONTEXT_MESSAGES).map(
-        (msg) => {
-          const sender = this.members.find(m => m.id === msg.agentId);
-          const content = sender 
-            ? `${sender.name}：${msg.content}`
-            : msg.content;
-          
-          return {
-            role: msg.agentId === currentAgentId ? "assistant" : "user",
-            content,
-          } as ChatMessage;
-        }
-      ),
-    ];
+    return this.messageConverter.toChatMessages({
+      systemPrompt,
+      messages,
+      currentAgentId,
+      maxContextMessages: AIService.MAX_CONTEXT_MESSAGES,
+      members: this.members
+    });
   }
 
   async generateResponse(
@@ -174,6 +168,10 @@ export class AIService {
       messages,
       moderator
     );
+  }
+
+  public chatCompletion(messages: ChatMessage[]): Promise<string> {
+    return this.provider.generateCompletion(messages);
   }
 }
 

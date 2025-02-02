@@ -1,5 +1,5 @@
 import { TypedEventEmitter } from "../base";
-import { asyncMethod } from "../decorators";
+import { asyncMethod, skipMiddleware } from "../decorators";
 import { IInternalMessageBus, IObservable, ITypedKey } from "../types";
 
 export class MessageBus
@@ -22,7 +22,8 @@ export class MessageBus
     return (this.messages.get(key.id) || []) as T[];
   }
 
-  subscribe<T>(key: ITypedKey<T>): IObservable<T> {
+  @skipMiddleware()
+  observe<T>(key: ITypedKey<T>): IObservable<T> {
     return this.createObservable(key);
   }
 

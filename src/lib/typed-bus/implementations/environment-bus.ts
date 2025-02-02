@@ -13,7 +13,7 @@ import {
   IMessageBus,
   IMiddleware,
   IResourceBus,
-  IStateBus
+  IStateBus,
 } from "../types";
 import { CapabilityBus } from "./capability-bus";
 import { EventBus } from "./event-bus";
@@ -25,11 +25,11 @@ export class EnvironmentBus implements IEnvironmentBus {
   private static RESET_KEY = createKey<unknown>("__environment.reset__");
   private static STATUS_KEY = createKey<IBusStatus>("__environment.status__");
 
-  readonly event: IEventBus;
-  readonly state: IStateBus;
-  readonly message: IMessageBus;
-  readonly resource: IResourceBus;
-  readonly capability: ICapabilityBus;
+  readonly eventBus: IEventBus;
+  readonly stateBus: IStateBus;
+  readonly messageBus: IMessageBus;
+  readonly resourceBus: IResourceBus;
+  readonly capabilityBus: ICapabilityBus;
 
   private middlewareChain = new MiddlewareChain();
   private internalState: IInternalStateBus;
@@ -43,43 +43,43 @@ export class EnvironmentBus implements IEnvironmentBus {
     this.internalResource = new ResourceBus() as IInternalResourceBus;
     this.internalCapability = new CapabilityBus() as IInternalCapabilityBus;
 
-    this.event = new BusProxy(
+    this.eventBus = new BusProxy(
       new EventBus(),
       "event",
       this.middlewareChain
     ).createProxy();
-    this.state = new BusProxy(
+    this.stateBus = new BusProxy(
       this.internalState,
       "state",
       this.middlewareChain
     ).createProxy();
-    this.message = new BusProxy(
+    this.messageBus = new BusProxy(
       this.internalMessage,
       "message",
       this.middlewareChain
     ).createProxy();
-    this.resource = new BusProxy(
+    this.resourceBus = new BusProxy(
       this.internalResource,
       "resource",
       this.middlewareChain
     ).createProxy();
-    this.capability = new BusProxy(
+    this.capabilityBus = new BusProxy(
       this.internalCapability,
       "capability",
       this.middlewareChain
     ).createProxy();
   }
 
-  use(middleware: IMiddleware<unknown>) {
+  use = (middleware: IMiddleware<unknown>) => {
     this.middlewareChain.add(middleware);
     return () => this.removeMiddleware(middleware);
-  }
+  };
 
-  removeMiddleware(middleware: IMiddleware<unknown>): void {
+  removeMiddleware = (middleware: IMiddleware<unknown>): void => {
     this.middlewareChain.remove(middleware);
-  }
+  };
 
-  async reset(): Promise<void> {
+  reset = async (): Promise<void> => {
     const context = {
       busType: "event" as const,
       operation: "reset",
@@ -95,16 +95,16 @@ export class EnvironmentBus implements IEnvironmentBus {
       const stateKeys = Array.from(this.internalState.states.keys()).map((id) =>
         createKey<unknown>(id)
       );
-      stateKeys.forEach((key) => this.state.reset(key));
+      stateKeys.forEach((key) => this.stateBus.reset(key));
 
       // 清理所有消息
       const messageKeys = Array.from(this.internalMessage.messages.keys()).map(
         (id) => createKey<unknown>(id)
       );
       await Promise.all([
-        ...messageKeys.map((key) => this.message.clear(key)),
-        ...Array.from(this.capability.list()).map((key) =>
-          this.capability.unregister(key)
+        ...messageKeys.map((key) => this.messageBus.clear(key)),
+        ...Array.from(this.capabilityBus.list()).map((key) =>
+          this.capabilityBus.unregister(key)
         ),
       ]);
 
@@ -119,7 +119,7 @@ export class EnvironmentBus implements IEnvironmentBus {
     }
   }
 
-  status(): IBusStatus {
+  status = (): IBusStatus => {
     const status = {
       event: true,
       state: true,
@@ -128,7 +128,7 @@ export class EnvironmentBus implements IEnvironmentBus {
       capability: true,
     };
 
-    this.state.set(EnvironmentBus.STATUS_KEY, status);
+    this.stateBus.set(EnvironmentBus.STATUS_KEY, status);
     return status;
   }
 }

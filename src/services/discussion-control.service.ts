@@ -1,18 +1,20 @@
 import { DEFAULT_SETTINGS } from "@/config/settings";
+import { BaseAgent, ChatAgent, Keys } from "@/lib/agent";
+import { CapabilityRegistry } from "@/lib/capabilities";
+import { DiscussionEnvBus } from "@/lib/discussion/discussion-env";
 import { RxEvent } from "@/lib/rx-event";
-import { Agent } from "@/types/agent";
-import { Message } from "@/types/discussion";
+import { agentListResource, discussionMembersResource } from "@/resources";
+import { discussionCapabilitiesResource } from "@/resources/discussion-capabilities.resource";
+import { discussionMemberService } from "@/services/discussion-member.service";
+import { AgentMessage } from "@/types/discussion";
 import { DiscussionMember } from "@/types/discussion-member";
-import { nanoid } from "nanoid";
 import { createNestedBean, createProxyBean } from "rx-nested-bean";
-import { agentService } from "./agent.service";
-import { AIService, aiService } from "./ai.service";
+import { agentSelector } from "./agent-selector.service";
 import {
   DiscussionError,
   DiscussionErrorType,
   handleDiscussionError,
 } from "./discussion-error.util";
-import { typingIndicatorService } from "./typing-indicator.service";
 
 class TimeoutManager {
   private timeouts = new Set<NodeJS.Timeout>();
@@ -34,7 +36,7 @@ class TimeoutManager {
 
 export class DiscussionControlService {
   store = createNestedBean({
-    messages: [] as Message[],
+    messages: [] as AgentMessage[],
     isPaused: true,
     currentDiscussionId: null as string | null,
     settings: DEFAULT_SETTINGS,
@@ -44,7 +46,9 @@ export class DiscussionControlService {
     topic: "",
   });
 
-  onMessage$ = new RxEvent<Message>();
+  onRequestSendMessage$ = new RxEvent<
+    Pick<AgentMessage, "agentId" | "content" | "type">
+  >();
   onError$ = new RxEvent<Error>();
   onCurrentDiscussionIdChange$ = new RxEvent<string | null>();
 
@@ -53,13 +57,69 @@ export class DiscussionControlService {
   private settingsBean = createProxyBean(this.store, "settings");
   currentDiscussionIdBean = createProxyBean(this.store, "currentDiscussionId");
   private currentRoundBean = createProxyBean(this.store, "currentRound");
-  private currentSpeakerIndexBean = createProxyBean(this.store, "currentSpeakerIndex");
+  private currentSpeakerIndexBean = createProxyBean(
+    this.store,
+    "currentSpeakerIndex"
+  );
   private membersBean = createProxyBean(this.store, "members");
   private topicBean = createProxyBean(this.store, "topic");
 
   private timeoutManager = new TimeoutManager();
 
-  constructor(private aiService: AIService) {}
+  private agents: Map<string, BaseAgent> = new Map();
+  private env: DiscussionEnvBus;
+
+  constructor() {
+    this.env = new DiscussionEnvBus();
+
+    discussionCapabilitiesResource.whenReady().then((data) => {
+      CapabilityRegistry.getInstance().registerAll(data);
+    });
+
+    // 监听 members 变化
+    this.membersBean.$.subscribe((members) => {
+      this.syncAgentsWithMembers(members);
+    });
+  }
+
+  private syncAgentsWithMembers(members: DiscussionMember[]) {
+    // 移除不在 members 中的 agents
+    for (const [agentId, agent] of this.agents) {
+      if (!members.find((m) => m.agentId === agentId)) {
+        agent.leaveEnv();
+        this.agents.delete(agentId);
+      }
+    }
+
+    // 更新或添加 agents
+    for (const member of members) {
+      const agentData = agentListResource
+        .read()
+        .data.find((agent) => agent.id === member.agentId)!;
+      const existingAgent = this.agents.get(member.agentId);
+      if (existingAgent) {
+        // 更新现有 agent 的配置
+        existingAgent.updateConfig({
+          ...agentData,
+        });
+        // 更新状态
+        existingAgent.updateState({
+          autoReply: member.isAutoReply,
+        });
+      } else {
+        // 创建新的 agent
+        const agent = new ChatAgent(
+          {
+            ...agentData,
+            agentId: member.agentId,
+          },
+          { autoReply: member.isAutoReply }
+        );
+        this.agents.set(member.agentId, agent);
+        agent.enterEnv(this.env);
+      }
+    }
+  }
 
   getCurrentDiscussionId(): string | null {
     return this.currentDiscussionIdBean.get();
@@ -80,14 +140,14 @@ export class DiscussionControlService {
   setMembers(members: DiscussionMember[]) {
     this.membersBean.set(members);
   }
-  
-  setMessages(messages: Message[]) {
+
+  setMessages(messages: AgentMessage[]) {
     this.messagesBean.set(messages);
   }
 
   removeMember(memberId: string) {
     const members = this.membersBean.get();
-    this.membersBean.set(members.filter(m => m.agentId !== memberId));
+    this.membersBean.set(members.filter((m) => m.agentId !== memberId));
   }
 
   setTopic(topic: string) {
@@ -98,79 +158,12 @@ export class DiscussionControlService {
     return this.topicBean.get();
   }
 
-  private async handleModeratorTurn(moderator: Agent, topic: string) {
-    const isFirstRound = this.currentRoundBean.get() === 0;
-    await this.generateAndAddMessage(
-      topic,
-      moderator,
-      isFirstRound ? "text" : "summary",
-      isFirstRound ? "主持人开场失败" : "生成总结失败"
-    );
-  }
-
-  private async handleParticipantTurn(
-    participant: Agent, 
-    topic: string, 
-    index: number
-  ) {
-    const member = this.membersBean.get()
-      .find(m => m.agentId === participant.id);
-    
-    if (!member || !member.isAutoReply) {
-      return false;
-    }
-
-    this.currentSpeakerIndexBean.set(index);
-    await this.generateAndAddMessage(
-      topic,
-      participant,
-      "text",
-      "生成回复失败"
-    );
-    
-    await new Promise<void>(resolve => 
-      this.timeoutManager.schedule(
-        resolve, 
-        this.settingsBean.get().interval
-      )
-    );
-
-    return true;
-  }
-
-  private async runDiscussionRound(
-    moderator: Agent,
-    participants: Agent[],
-    topic: string
-  ) {
-    // 主持人回合
-    await this.handleModeratorTurn(moderator, topic);
-
-    // 参与者回合
-    let activeParticipants = 0;
-    for (let i = 0; i < participants.length; i++) {
-      if (this.isPausedBean.get()) {
-        return false;
-      }
-      
-      const participated = await this.handleParticipantTurn(
-        participants[i],
-        topic,
-        i
-      );
-      
-      if (participated) {
-        activeParticipants++;
-      }
-    }
-
-    return activeParticipants > 0;
+  onMessage(message: AgentMessage) {
+    this.env.eventBus.emit(Keys.Events.message, message);
   }
 
   async run() {
-    if (!this.isPausedBean.get()) {
-      return;
-    }
+    if (!this.isPausedBean.get()) return;
 
     try {
       const topic = this.topicBean.get();
@@ -181,98 +174,81 @@ export class DiscussionControlService {
         );
       }
 
+      // 检查当前成员数量
+      const currentMembers = this.membersBean.get();
+      let selectedIds: string[] = [];
+      let needUpdateMembers = false;
+
+      if (currentMembers.length > 1) {
+        // 如果已有足够成员，直接使用现有成员
+        selectedIds = currentMembers.map((member) => member.agentId);
+      } else {
+        // 否则使用选择器选择新成员
+        const availableAgents = agentListResource.read().data;
+        selectedIds = await agentSelector.selectAgents(topic, availableAgents);
+        needUpdateMembers = true;
+      }
+
+      if (selectedIds.length === 0) {
+        throw new DiscussionError(
+          DiscussionErrorType.NO_PARTICIPANTS,
+          "没有合适的参与者"
+        );
+      }
+
+      // 只在需要时更新成员
+      if (needUpdateMembers) {
+        await this.updateDiscussionMembers(selectedIds);
+      }
+
+      // 开始讨论
       this.isPausedBean.set(false);
-      
-      while (!this.isPausedBean.get()) {
-        // 获取最新成员状态
-        const currentMembers = this.membersBean.get();
-        const currentAgents = await Promise.all(
-          currentMembers.map(member => agentService.getAgent(member.agentId))
-        );
-        
-        const moderator = currentAgents.find(agent => agent.role === "moderator");
-        const participants = currentAgents.filter(agent => agent.role === "participant");
-        
-        if (!moderator) {
-          throw new DiscussionError(
-            DiscussionErrorType.NO_MODERATOR,
-            "未找到主持人角色"
-          );
-        }
 
-        // 运行一轮讨论
-        const hasActiveParticipants = await this.runDiscussionRound(
-          moderator,
-          participants,
-          topic
-        );
+      // 发送讨论开始事件，agents会自动响应
+      this.env.eventBus.emit(Keys.Events.discussionStart, { topic });
 
-        if (!hasActiveParticipants) {
-          this.pause();
-          throw new DiscussionError(
-            DiscussionErrorType.NO_PARTICIPANTS,
-            "所有参与者已离开讨论"
-          );
-        }
-
-        this.currentRoundBean.set(this.currentRoundBean.get() + 1);
+      // 发送一个初始消息来启动讨论
+      const moderator = this.agents.get(selectedIds[0]);
+      if (moderator) {
+        this.env.eventBus.emit(Keys.Events.message, {
+          agentId: "system",
+          content: `让我们开始讨论主题：${topic}`,
+          type: "text",
+          id: "system",
+          discussionId: this.getCurrentDiscussionId()!,
+          timestamp: new Date(),
+        });
       }
     } catch (error) {
-      this.handleError(error, "讨论运行失败", { topic: this.topicBean.get() });
+      this.handleError(error, "讨论运行失败");
       this.pause();
-    } finally {
-      this.cleanup();
     }
+  }
+
+  private async updateDiscussionMembers(agentIds: string[]) {
+    const discussionId = this.getCurrentDiscussionId();
+    if (!discussionId) return;
+
+    const members: Omit<
+      DiscussionMember,
+      "id" | "joinedAt" | "discussionId"
+    >[] = agentIds.map((id) => ({
+      agentId: id,
+      isAutoReply: true,
+    }));
+    await discussionMemberService.createMany(discussionId, members);
+    discussionMembersResource.current.reload();
   }
 
   pause() {
     this.isPausedBean.set(true);
+    // 发送讨论暂停事件
+    this.env.eventBus.emit(Keys.Events.discussionPause, null);
     this.cleanup();
   }
 
   private cleanup() {
     this.timeoutManager.clearAll();
-  }
-
-  private async generateAndAddMessage(
-    topic: string,
-    agent: Agent,
-    type: Message["type"],
-    errorMessage: string
-  ) {
-    try {
-      typingIndicatorService.updateStatus(agent.id, 'thinking');
-      const content = type === "summary"
-        ? await this.aiService.generateModeratorSummary(
-            topic,
-            this.settingsBean.get().temperature,
-            this.messagesBean.get(),
-            agent
-          )
-        : await this.aiService.generateResponse(
-            topic,
-            this.settingsBean.get().temperature,
-            this.messagesBean.get(),
-            agent
-          );
-
-      const message = {
-        id: nanoid(),
-        agentId: agent.id,
-        content,
-        type,
-        timestamp: new Date(),
-        discussionId: this.currentDiscussionIdBean.get() ?? "",
-      };
-
-      this.messagesBean.set([...this.messagesBean.get(), message]);
-      this.onMessage$.next(message);
-    } catch (error) {
-      this.handleError(error, errorMessage, { topic, agentId: agent.id });
-      throw error;
-    } finally {
-      typingIndicatorService.updateStatus(agent.id, null);
-    }
   }
 
   clearMessages() {
@@ -281,7 +257,6 @@ export class DiscussionControlService {
     this.currentRoundBean.set(0);
     this.currentSpeakerIndexBean.set(-1);
     this.settingsBean.set(DEFAULT_SETTINGS);
-    this.currentDiscussionIdBean.set(null);
   }
 
   private handleError(
@@ -306,6 +281,10 @@ export class DiscussionControlService {
 
     this.onError$.next(discussionError);
   }
+
+  getAgent(agentId: string): BaseAgent | undefined {
+    return this.agents.get(agentId);
+  }
 }
 
-export const discussionControlService = new DiscussionControlService(aiService);
+export const discussionControlService = new DiscussionControlService();

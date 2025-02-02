@@ -16,8 +16,8 @@ describe('EnvironmentBus', () => {
             const key = createKey<string>('test-event');
             const handler = jest.fn();
             
-            bus.event.on(key, handler);
-            bus.event.emit(key, 'test-data');
+            bus.eventBus.on(key, handler);
+            bus.eventBus.emit(key, 'test-data');
             
             expect(handler).toHaveBeenCalledWith('test-data');
         });
@@ -26,7 +26,7 @@ describe('EnvironmentBus', () => {
             const key = createKey<number>('counter');
             const values: number[] = [];
             
-            bus.event.observe(key).subscribe({
+            bus.eventBus.observe(key).subscribe({
                 next: (value) => {
                     values.push(value);
                     if (values.length === 3) {
@@ -36,9 +36,9 @@ describe('EnvironmentBus', () => {
                 }
             });
 
-            bus.event.emit(key, 1);
-            bus.event.emit(key, 2);
-            bus.event.emit(key, 3);
+            bus.eventBus.emit(key, 1);
+            bus.eventBus.emit(key, 2);
+            bus.eventBus.emit(key, 3);
         });
     });
 
@@ -46,17 +46,17 @@ describe('EnvironmentBus', () => {
         it('should manage state correctly', () => {
             const key = createKey<{ count: number }>('app-state');
             
-            bus.state.set(key, { count: 1 });
-            expect(bus.state.get(key)).toEqual({ count: 1 });
+            bus.stateBus.set(key, { count: 1 });
+            expect(bus.stateBus.get(key)).toEqual({ count: 1 });
             
-            bus.state.set(key, { count: 2 });
-            expect(bus.state.get(key)).toEqual({ count: 2 });
+            bus.stateBus.set(key, { count: 2 });
+            expect(bus.stateBus.get(key)).toEqual({ count: 2 });
         });
 
         it('should notify state changes', (done) => {
             const key = createKey<string>('user-name');
             
-            const observable = bus.state.watch(key);
+            const observable = bus.stateBus.watch(key);
             
             // 确保 observable 是一个有效的可观察对象
             expect(observable).toBeDefined();
@@ -70,7 +70,7 @@ describe('EnvironmentBus', () => {
                 }
             });
 
-            bus.state.set(key, 'Alice');
+            bus.stateBus.set(key, 'Alice');
         });
     });
 
@@ -78,20 +78,20 @@ describe('EnvironmentBus', () => {
         it('should handle async message passing', async () => {
             const key = createKey<string>('chat');
             
-            await bus.message.send(key, 'Hello');
-            await bus.message.send(key, 'World');
+            await bus.messageBus.send(key, 'Hello');
+            await bus.messageBus.send(key, 'World');
             
-            const messages = await bus.message.receive(key);
+            const messages = await bus.messageBus.receive(key);
             expect(messages).toEqual(['Hello', 'World']);
         });
 
         it('should clear messages', async () => {
             const key = createKey<string>('notifications');
             
-            await bus.message.send(key, 'Notice 1');
-            await bus.message.clear(key);
+            await bus.messageBus.send(key, 'Notice 1');
+            await bus.messageBus.clear(key);
             
-            const messages = await bus.message.receive(key);
+            const messages = await bus.messageBus.receive(key);
             expect(messages).toEqual([]);
         });
     });
@@ -113,14 +113,14 @@ describe('EnvironmentBus', () => {
         it('should manage resource lifecycle', async () => {
             const key = createKey<string>('database');
             
-            expect(bus.resource.status(key)).toBe('available');
+            expect(bus.resourceBus.status(key)).toBe('available');
             
-            const resource = await bus.resource.acquire(key);
+            const resource = await bus.resourceBus.acquire(key);
             expect(resource).toBe('test-resource');
-            expect(bus.resource.status(key)).toBe('busy');
+            expect(bus.resourceBus.status(key)).toBe('busy');
             
-            await bus.resource.release(key);
-            expect(bus.resource.status(key)).toBe('available');
+            await bus.resourceBus.release(key);
+            expect(bus.resourceBus.status(key)).toBe('available');
         });
     });
 
@@ -128,19 +128,19 @@ describe('EnvironmentBus', () => {
         it('should register and invoke capabilities', async () => {
             const key = createKey<[string, number]>('string-length');
             
-            bus.capability.register(key, async (str) => str.length);
+            bus.capabilityBus.register(key, async (str) => str.length);
             
-            const result = await bus.capability.invoke(key, 'hello');
+            const result = await bus.capabilityBus.invoke(key, 'hello');
             expect(result).toBe(5);
         });
 
         it('should handle capability unregistration', async () => {
             const key = createKey<[void, string]>('get-time');
             
-            bus.capability.register(key, async () => 'current-time');
-            bus.capability.unregister(key);
+            bus.capabilityBus.register(key, async () => 'current-time');
+            bus.capabilityBus.unregister(key);
             
-            await expect(bus.capability.invoke(key, undefined))
+            await expect(bus.capabilityBus.invoke(key, undefined))
                 .rejects
                 .toThrow('Capability get-time not found');
         });
@@ -165,7 +165,7 @@ describe('EnvironmentBus', () => {
             bus.use(middleware);
 
             const key = createKey<string>('test');
-            await bus.message.send(key, 'test-data');
+            await bus.messageBus.send(key, 'test-data');
             await new Promise(resolve => setTimeout(resolve, 0));
 
             expect(operations).toEqual(['before', 'after']);
@@ -230,18 +230,18 @@ describe('EnvironmentBus', () => {
             const messageKey = createKey<string>('test-message');
             const capabilityKey = createKey<[void, string]>('test-capability');
 
-            bus.event.on(eventKey, () => {});
-            bus.state.set(stateKey, 42);
-            await bus.message.send(messageKey, 'test');
-            bus.capability.register(capabilityKey, async () => 'result');
+            bus.eventBus.on(eventKey, () => {});
+            bus.stateBus.set(stateKey, 42);
+            await bus.messageBus.send(messageKey, 'test');
+            bus.capabilityBus.register(capabilityKey, async () => 'result');
 
             // Reset
             await bus.reset();
 
             // Verify reset
-            expect(bus.state.get(stateKey)).toBeUndefined();
-            expect(await bus.message.receive(messageKey)).toEqual([]);
-            await expect(bus.capability.invoke(capabilityKey, undefined))
+            expect(bus.stateBus.get(stateKey)).toBeUndefined();
+            expect(await bus.messageBus.receive(messageKey)).toEqual([]);
+            await expect(bus.capabilityBus.invoke(capabilityKey, undefined))
                 .rejects
                 .toThrow();
         });
@@ -260,15 +260,15 @@ describe('EnvironmentBus', () => {
         it('should handle concurrent resource access', async () => {
             const key = createKey<string>('shared-resource');
             
-            await bus.resource.acquire(key);
-            await expect(bus.resource.acquire(key)).rejects.toThrow('Resource shared-resource is busy');
-            await bus.resource.release(key);
+            await bus.resourceBus.acquire(key);
+            await expect(bus.resourceBus.acquire(key)).rejects.toThrow('Resource shared-resource is busy');
+            await bus.resourceBus.release(key);
         });
 
         it('should handle invalid capability parameters', async () => {
             const key = createKey<[number, string]>('number-to-string');
             
-            bus.capability.register(key, async (num: number) => {
+            bus.capabilityBus.register(key, async (num: number) => {
                 if (typeof num !== 'number') {
                     throw new Error('Invalid parameter type');
                 }
@@ -276,7 +276,7 @@ describe('EnvironmentBus', () => {
             });
             
             // @ts-expect-error 测试类型安全
-            await expect(bus.capability.invoke(key, 'not-a-number'))
+            await expect(bus.capabilityBus.invoke(key, 'not-a-number'))
                 .rejects
                 .toThrow('Invalid parameter type');
         });
@@ -289,12 +289,12 @@ describe('EnvironmentBus', () => {
             
             const start = performance.now();
             for (let i = 0; i < iterations; i++) {
-                bus.state.set(key, i);
+                bus.stateBus.set(key, i);
             }
             const end = performance.now();
             
             expect(end - start).toBeLessThan(1000); // 应该在1秒内完成
-            expect(bus.state.get(key)).toBe(iterations - 1);
+            expect(bus.stateBus.get(key)).toBe(iterations - 1);
         });
 
         it('should handle multiple event subscribers efficiently', () => {
@@ -302,10 +302,10 @@ describe('EnvironmentBus', () => {
             const iterations = 100;
             const handlers = Array.from({ length: iterations }, () => jest.fn());
             
-            handlers.forEach(handler => bus.event.on(key, handler));
+            handlers.forEach(handler => bus.eventBus.on(key, handler));
             
             const start = performance.now();
-            bus.event.emit(key, 42);
+            bus.eventBus.emit(key, 42);
             const end = performance.now();
             
             expect(end - start).toBeLessThan(100); // 应该在100ms内完成
@@ -319,19 +319,19 @@ describe('EnvironmentBus', () => {
         it('should enforce type safety in state operations', () => {
             const key = createKey<string>('typed-state');
             
-            bus.state.set(key, 'valid');
+            bus.stateBus.set(key, 'valid');
             
             // @ts-expect-error 测试类型安全
-            bus.state.set(key, 123);
+            bus.stateBus.set(key, 123);
         });
 
         it('should enforce type safety in capability operations', () => {
             const key = createKey<[string, number]>('typed-capability');
             
-            bus.capability.register(key, async (str) => str.length);
+            bus.capabilityBus.register(key, async (str) => str.length);
             
             // @ts-expect-error 测试类型安全
-            bus.capability.register(key, async (num: number) => num.toString());
+            bus.capabilityBus.register(key, async (num: number) => num.toString());
         });
     });
 });
@@ -352,16 +352,16 @@ describe('EnvironmentBus Integration', () => {
             const stateKey = createKey<number>('counter');
             const eventKey = createKey<void>('increment');
             
-            bus.state.set(stateKey, 0);
-            bus.event.on(eventKey, () => {
-                const current = bus.state.get(stateKey) || 0;
-                bus.state.set(stateKey, current + 1);
+            bus.stateBus.set(stateKey, 0);
+            bus.eventBus.on(eventKey, () => {
+                const current = bus.stateBus.get(stateKey) || 0;
+                bus.stateBus.set(stateKey, current + 1);
             });
 
-            bus.event.emit(eventKey, undefined);
-            bus.event.emit(eventKey, undefined);
+            bus.eventBus.emit(eventKey, undefined);
+            bus.eventBus.emit(eventKey, undefined);
             
-            expect(bus.state.get(stateKey)).toBe(2);
+            expect(bus.stateBus.get(stateKey)).toBe(2);
         });
 
         it('should coordinate between message and capability buses', async () => {
@@ -369,13 +369,13 @@ describe('EnvironmentBus Integration', () => {
             const capabilityKey = createKey<[string, string]>('transform');
             
             // 注册一个将字符串转换为大写的能力
-            bus.capability.register(capabilityKey, async (str) => str.toUpperCase());
+            bus.capabilityBus.register(capabilityKey, async (str) => str.toUpperCase());
 
             // 发送消息并使用能力处理
-            await bus.message.send(messageKey, 'hello');
-            const messages = await bus.message.receive(messageKey);
+            await bus.messageBus.send(messageKey, 'hello');
+            const messages = await bus.messageBus.receive(messageKey);
             const results = await Promise.all(
-                messages.map(msg => bus.capability.invoke(capabilityKey, msg))
+                messages.map(msg => bus.capabilityBus.invoke(capabilityKey, msg))
             );
 
             expect(results).toEqual(['HELLO']);
@@ -386,16 +386,16 @@ describe('EnvironmentBus Integration', () => {
         it('should handle nested state updates', () => {
             const key = createKey<{ user: { name: string; age: number } }>('user-data');
             
-            bus.state.set(key, { user: { name: 'John', age: 25 } });
+            bus.stateBus.set(key, { user: { name: 'John', age: 25 } });
             
-            const state = bus.state.get(key);
+            const state = bus.stateBus.get(key);
             if (state) {
-                bus.state.set(key, {
+                bus.stateBus.set(key, {
                     user: { ...state.user, age: 26 }
                 });
             }
 
-            expect(bus.state.get(key)).toEqual({
+            expect(bus.stateBus.get(key)).toEqual({
                 user: { name: 'John', age: 26 }
             });
         });
@@ -403,11 +403,11 @@ describe('EnvironmentBus Integration', () => {
         it('should handle array state updates', () => {
             const key = createKey<string[]>('items');
             
-            bus.state.set(key, ['a', 'b']);
-            const items = bus.state.get(key) || [];
-            bus.state.set(key, [...items, 'c']);
+            bus.stateBus.set(key, ['a', 'b']);
+            const items = bus.stateBus.get(key) || [];
+            bus.stateBus.set(key, [...items, 'c']);
 
-            expect(bus.state.get(key)).toEqual(['a', 'b', 'c']);
+            expect(bus.stateBus.get(key)).toEqual(['a', 'b', 'c']);
         });
     });
 
@@ -424,15 +424,15 @@ describe('EnvironmentBus Integration', () => {
         it('should handle concurrent resource access', async () => {
             const key = createKey<string>('shared-resource');
             
-            await bus.resource.acquire(key);
-            await expect(bus.resource.acquire(key)).rejects.toThrow('Resource shared-resource is busy');
-            await bus.resource.release(key);
+            await bus.resourceBus.acquire(key);
+            await expect(bus.resourceBus.acquire(key)).rejects.toThrow('Resource shared-resource is busy');
+            await bus.resourceBus.release(key);
         });
 
         it('should handle invalid capability parameters', async () => {
             const key = createKey<[number, string]>('number-to-string');
             
-            bus.capability.register(key, async (num: number) => {
+            bus.capabilityBus.register(key, async (num: number) => {
                 if (typeof num !== 'number') {
                     throw new Error('Invalid parameter type');
                 }
@@ -440,7 +440,7 @@ describe('EnvironmentBus Integration', () => {
             });
             
             // @ts-expect-error 测试类型安全
-            await expect(bus.capability.invoke(key, 'not-a-number'))
+            await expect(bus.capabilityBus.invoke(key, 'not-a-number'))
                 .rejects
                 .toThrow('Invalid parameter type');
         });
@@ -453,12 +453,12 @@ describe('EnvironmentBus Integration', () => {
             
             const start = performance.now();
             for (let i = 0; i < iterations; i++) {
-                bus.state.set(key, i);
+                bus.stateBus.set(key, i);
             }
             const end = performance.now();
             
             expect(end - start).toBeLessThan(1000); // 应该在1秒内完成
-            expect(bus.state.get(key)).toBe(iterations - 1);
+            expect(bus.stateBus.get(key)).toBe(iterations - 1);
         });
 
         it('should handle multiple event subscribers efficiently', () => {
@@ -466,10 +466,10 @@ describe('EnvironmentBus Integration', () => {
             const iterations = 100;
             const handlers = Array.from({ length: iterations }, () => jest.fn());
             
-            handlers.forEach(handler => bus.event.on(key, handler));
+            handlers.forEach(handler => bus.eventBus.on(key, handler));
             
             const start = performance.now();
-            bus.event.emit(key, 42);
+            bus.eventBus.emit(key, 42);
             const end = performance.now();
             
             expect(end - start).toBeLessThan(100); // 应该在100ms内完成
@@ -483,19 +483,19 @@ describe('EnvironmentBus Integration', () => {
         it('should enforce type safety in state operations', () => {
             const key = createKey<string>('typed-state');
             
-            bus.state.set(key, 'valid');
+            bus.stateBus.set(key, 'valid');
             
             // @ts-expect-error 测试类型安全
-            bus.state.set(key, 123);
+            bus.stateBus.set(key, 123);
         });
 
         it('should enforce type safety in capability operations', () => {
             const key = createKey<[string, number]>('typed-capability');
             
-            bus.capability.register(key, async (str) => str.length);
+            bus.capabilityBus.register(key, async (str) => str.length);
             
             // @ts-expect-error 测试类型安全
-            bus.capability.register(key, async (num: number) => num.toString());
+            bus.capabilityBus.register(key, async (num: number) => num.toString());
         });
     });
 }); 

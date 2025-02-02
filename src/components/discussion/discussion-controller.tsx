@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 import { cn } from "@/lib/utils";
 import { discussionControlService } from "@/services/discussion-control.service";
-import { Discussion, DiscussionSettings, Message } from "@/types/discussion";
+import { Discussion, DiscussionSettings, AgentMessage } from "@/types/discussion";
 import { PauseCircle, PlayCircle, Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useProxyBeanState } from "rx-nested-bean";
@@ -87,7 +87,7 @@ interface DiscussionControllerProps {
   onSendMessage: (
     content: string,
     agentId: string,
-    type: Message["type"],
+    type: AgentMessage["type"],
     replyTo?: string
   ) => void;
 }
@@ -125,7 +125,7 @@ export function DiscussionController({
   },[])
 
   useEffect(() => {
-    return discussionControlService.onMessage$.listen((message) => {
+    return discussionControlService.onRequestSendMessage$.listen((message) => {
       onSendMessage(message.content, message.agentId, message.type);
     });
   }, [onSendMessage]);

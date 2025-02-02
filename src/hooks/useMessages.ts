@@ -1,4 +1,4 @@
-import { Message } from "@/types/discussion";
+import { AgentMessage } from "@/types/discussion";
 import { messagesResource } from "@/resources";
 import { messageService } from "@/services/message.service";
 import { useResourceState } from "@/lib/resource";
@@ -21,7 +21,7 @@ export function useMessages() {
     async (
       content: string,
       agentId: string,
-      type: Message["type"] = "text"
+      type: AgentMessage["type"] = "text"
     ) => {
       if (!currentDiscussionId) return;
 

@@ -1,13 +1,13 @@
 import { useDiscussions } from "@/hooks/useDiscussions";
 import { cn } from "@/lib/utils";
 import { discussionControlService } from "@/services/discussion-control.service";
-import { Message } from "@/types/discussion";
+import { AgentMessage } from "@/types/discussion";
 import { useRef } from "react";
 import { MessageInput } from "./message-input";
 import { MessageList, MessageListRef } from "./message-list";
 
 interface ChatAreaProps {
-  messages: Message[];
+  messages: AgentMessage[];
   onSendMessage: (content: string, agentId: string) => Promise<void>;
   getAgentName: (agentId: string) => string;
   getAgentAvatar: (agentId: string) => string;

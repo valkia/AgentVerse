@@ -30,11 +30,12 @@ export function App() {
 
   // 处理第一条消息，设置为主题
   const handleMessage = async (content: string, agentId: string) => {
-    await addMessage(content, agentId);
+    const agentMessage = await addMessage(content, agentId);
     // 如果是第一条消息，设置为主题
     if (messages.length === 0) {
       discussionControlService.setTopic(content);
     }
+    if (agentMessage) discussionControlService.onMessage(agentMessage);
   };
 
   useEffect(() => {
@@ -75,10 +76,7 @@ export function App() {
             className="flex-none p-4 border-b"
             data-testid="discussion-controller"
           >
-            <DiscussionController
-              status={status}
-              onSendMessage={addMessage}
-            />
+            <DiscussionController status={status} onSendMessage={addMessage} />
           </div>
           <div className="flex-1 min-h-0" data-testid="chat-area">
             <ChatArea

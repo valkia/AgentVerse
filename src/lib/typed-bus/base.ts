@@ -1,70 +1,60 @@
-import { ITypedKey, IObservable, IObserver, ISubscription } from './types';
+import { ITypedKey } from "./types";
+import { Observable, Subject, Subscription } from "rxjs";
 
 type IEventHandler<T> = (data: T) => void;
 
 export class TypedEventEmitter {
-    private handlers = new Map<string, Set<IEventHandler<unknown>>>();
+  private subjects = new Map<string, Subject<unknown>>();
+  private subscriptions = new Map<string, Map<IEventHandler<unknown>, Subscription>>();
 
-    emit<T>(key: ITypedKey<T>, data: T): void {
-        const handlers = this.handlers.get(key.id);
-        if (handlers) {
-            handlers.forEach(handler => {
-                try {
-                    handler(data);
-                } catch (error) {
-                    console.error('Error in event handler:', error);
-                }
-            });
-        }
-    }
+  emit<T>(key: ITypedKey<T>, data: T): void {
+    const subject = this.getOrCreateSubject<T>(key);
+    subject.next(data);
+  }
 
-    on<T>(key: ITypedKey<T>, handler: IEventHandler<T>): void {
-        if (typeof handler !== 'function') {
-            throw new TypeError('Event handler must be a function');
-        }
-        if (!this.handlers.has(key.id)) {
-            this.handlers.set(key.id, new Set());
-        }
-        const handlers = this.handlers.get(key.id)!;
-        handlers.add(handler as IEventHandler<unknown>);
-    }
+  on<T>(key: ITypedKey<T>, handler: IEventHandler<T>): () => void {
+    const subject = this.getOrCreateSubject<T>(key);
+    const subscription = subject.subscribe({
+      next: (value) => handler(value as T)
+    });
 
-    off<T>(key: ITypedKey<T>, handler: IEventHandler<T>): void {
-        const handlers = this.handlers.get(key.id);
-        if (handlers) {
-            handlers.delete(handler as IEventHandler<unknown>);
-            if (handlers.size === 0) {
-                this.handlers.delete(key.id);
-            }
-        }
+    if (!this.subscriptions.has(key.id)) {
+      this.subscriptions.set(key.id, new Map());
     }
+    const keySubscriptions = this.subscriptions.get(key.id)!;
+    keySubscriptions.set(handler as IEventHandler<unknown>, subscription);
 
-    protected createObservable<T>(key: ITypedKey<T>): IObservable<T> {
-        return {
-            subscribe: (observer: IObserver<T>): ISubscription => {
-                const handler = (data: T) => {
-                    try {
-                        observer.next(data);
-                    } catch (error) {
-                        if (observer.error) {
-                            observer.error(error as Error);
-                        } else {
-                            console.error('Error in observer:', error);
-                        }
-                    }
-                };
-                
-                this.on(key, handler);
-                
-                return {
-                    unsubscribe: () => {
-                        this.off(key, handler);
-                        if (observer.complete) {
-                            observer.complete();
-                        }
-                    }
-                };
-            }
-        };
+    return () => {
+      subscription.unsubscribe();
+      keySubscriptions.delete(handler as IEventHandler<unknown>);
+      if (keySubscriptions.size === 0) {
+        this.subscriptions.delete(key.id);
+      }
+    };
+  }
+
+  off<T>(key: ITypedKey<T>, handler: IEventHandler<T>): void {
+    const keySubscriptions = this.subscriptions.get(key.id);
+    if (keySubscriptions) {
+      const subscription = keySubscriptions.get(handler as IEventHandler<unknown>);
+      if (subscription) {
+        subscription.unsubscribe();
+        keySubscriptions.delete(handler as IEventHandler<unknown>);
+        if (keySubscriptions.size === 0) {
+          this.subscriptions.delete(key.id);
+        }
+      }
     }
-} 
+  }
+
+  protected createObservable<T>(key: ITypedKey<T>): Observable<T> {
+    return this.getOrCreateSubject<T>(key).asObservable() as Observable<T>;
+  }
+
+  private getOrCreateSubject<T>(key: ITypedKey<T>): Subject<unknown> {
+    if (!this.subjects.has(key.id)) {
+      this.subjects.set(key.id, new Subject<unknown>());
+    }
+    return this.subjects.get(key.id)!;
+  }
+}

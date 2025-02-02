@@ -6,13 +6,13 @@ import {
   ScrollableLayoutRef,
 } from "@/layouts/scrollable-layout";
 import { cn } from "@/lib/utils";
-import { Message } from "@/types/discussion";
+import { AgentMessage } from "@/types/discussion";
 import { ArrowDown } from "lucide-react";
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { TypingIndicator } from "./typing-indicator";
 
 interface MessageItemProps {
-  message: Message;
+  message: AgentMessage;
   agentInfo: {
     getName: (agentId: string) => string;
     getAvatar: (agentId: string) => string;
@@ -50,7 +50,7 @@ function MessageItem({ message, agentInfo }: MessageItemProps) {
 }
 
 interface MessageListProps {
-  messages: Message[];
+  messages: AgentMessage[];
   agentInfo: {
     getName: (agentId: string) => string;
     getAvatar: (agentId: string) => string;
