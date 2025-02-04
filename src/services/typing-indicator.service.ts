@@ -35,7 +35,6 @@ export class TypingIndicatorService {
     const { 
       enableAutoCleanup = true, 
       cleanupInterval = this.DEFAULT_CLEANUP_INTERVAL,
-      expirationTime = this.DEFAULT_EXPIRATION_TIME,
     } = options;
 
     if (enableAutoCleanup) {
