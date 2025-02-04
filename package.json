@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "deploy": "pnpm build && ossutil64 cp -r -u dist oss://apps-eiooie-com/muti-chat -c ./.ossutilconfig.local",
     "git:update": "git add . && git commit -m 'update' && git push",
+    "updateAll":"pnpm git:update && pnpm deploy",
     "test": "jest"
   },
   "dependencies": {

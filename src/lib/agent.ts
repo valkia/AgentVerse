@@ -164,10 +164,6 @@ export abstract class BaseAgent<S extends BaseAgentState = BaseAgentState> {
       "isThinking" in this.state &&
       prevState.isThinking !== this.state.isThinking
     ) {
-      console.log(
-        `[Agent ${this.config.name}] isThinking changed:`,
-        this.state.isThinking
-      );
       this.env.eventBus.emit(DiscussionKeys.Events.thinking, {
         agentId: this.config.agentId,
         isThinking: this.state.isThinking || false,
@@ -242,7 +238,6 @@ export abstract class BaseAgent<S extends BaseAgentState = BaseAgentState> {
   private async speak(message: AgentMessage): Promise<void> {
     let agentMessage: AgentMessage | null = null;
     try {
-      console.log(`[Agent ${this.config.name}] Starting to speak...`);
       this.env.stateBus.set(
         DiscussionKeys.States.speaking,
         this.config.agentId
@@ -254,7 +249,6 @@ export abstract class BaseAgent<S extends BaseAgentState = BaseAgentState> {
         agentMessage = await this.addMessage(response);
       }
     } finally {
-      console.log(`[Agent ${this.config.name}] Finished speaking...`);
       this.setState({
         isThinking: false,
         lastSpeakTime: new Date(),

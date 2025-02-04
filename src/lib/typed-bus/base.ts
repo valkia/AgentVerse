@@ -1,22 +1,24 @@
-import { ITypedKey } from "./types";
 import { Observable, Subject, Subscription } from "rxjs";
+import { ITypedKey } from "./types";
 
 type IEventHandler<T> = (data: T) => void;
 
 export class TypedEventEmitter {
   private subjects = new Map<string, Subject<unknown>>();
-  private subscriptions = new Map<string, Map<IEventHandler<unknown>, Subscription>>();
+  private subscriptions = new Map<
+    string,
+    Map<IEventHandler<unknown>, Subscription>
+  >();
 
   emit<T>(key: ITypedKey<T>, data: T): void {
     const subject = this.getOrCreateSubject<T>(key);
-    console.log("[TypedEventEmitter]emit:", key, data);
     subject.next(data);
   }
 
   on<T>(key: ITypedKey<T>, handler: IEventHandler<T>): () => void {
     const subject = this.getOrCreateSubject<T>(key);
     const subscription = subject.subscribe({
-      next: (value) => handler(value as T)
+      next: (value) => handler(value as T),
     });
 
     if (!this.subscriptions.has(key.id)) {
@@ -37,7 +39,9 @@ export class TypedEventEmitter {
   off<T>(key: ITypedKey<T>, handler: IEventHandler<T>): void {
     const keySubscriptions = this.subscriptions.get(key.id);
     if (keySubscriptions) {
-      const subscription = keySubscriptions.get(handler as IEventHandler<unknown>);
+      const subscription = keySubscriptions.get(
+        handler as IEventHandler<unknown>
+      );
       if (subscription) {
         subscription.unsubscribe();
         keySubscriptions.delete(handler as IEventHandler<unknown>);

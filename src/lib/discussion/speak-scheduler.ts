@@ -83,6 +83,11 @@ export class SpeakScheduler {
   private calculateScore(request: SpeakRequest): number {
     let score = request.priority;
 
+    // mention类型给予显著更高的优先级
+    if (request.reason.type === 'mentioned') {
+      score += 100; // 给予很高的基础分数
+    }
+
     // 时间因素
     const timeWeight = 0.1;
     const timeDiff = Date.now() - request.timestamp.getTime();
