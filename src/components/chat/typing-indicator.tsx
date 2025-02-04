@@ -1,11 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
-  typingIndicatorService,
-  TypingIndicator as TypingIndicatorType,
-  TypingStatus,
+  ITypingIndicator as TypingIndicatorType,
+  TypingStatus
 } from "@/services/typing-indicator.service";
-import { useEffect, useState } from "react";
 
 export interface TypingIndicatorProps {
   /**
@@ -24,6 +22,11 @@ export interface TypingIndicatorProps {
    * 自定义容器类名
    */
   containerClassName?: string;
+  /**
+   * 输入状态指示器数据
+   * 可选参数,如果不提供则使用内部状态管理
+   */
+  indicators: Map<string, TypingIndicatorType>;
 }
 
 /**
@@ -35,15 +38,8 @@ export function TypingIndicator({
   getMemberAvatar,
   className,
   containerClassName,
+  indicators
 }: TypingIndicatorProps) {
-  const [indicators, setIndicators] = useState<
-    Map<string, TypingIndicatorType>
-  >(typingIndicatorService.getIndicators());
-
-  useEffect(() => {
-    // 订阅状态变化
-    return typingIndicatorService.onIndicatorsChange$.listen(setIndicators);
-  }, []);
 
   if (indicators.size === 0) return null;
 

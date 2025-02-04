@@ -9,6 +9,7 @@ export class TypedEventEmitter {
 
   emit<T>(key: ITypedKey<T>, data: T): void {
     const subject = this.getOrCreateSubject<T>(key);
+    console.log("[TypedEventEmitter]emit:", key, data);
     subject.next(data);
   }
 

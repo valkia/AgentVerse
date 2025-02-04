@@ -6,9 +6,19 @@ import {
   ScrollableLayoutRef,
 } from "@/layouts/scrollable-layout";
 import { cn } from "@/lib/utils";
+import {
+  ITypingIndicator,
+  typingIndicatorService,
+} from "@/services/typing-indicator.service";
 import { AgentMessage } from "@/types/discussion";
 import { ArrowDown } from "lucide-react";
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { TypingIndicator } from "./typing-indicator";
 
 interface MessageItemProps {
@@ -87,6 +97,15 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
       );
     };
 
+    const [indicators, setIndicators] = useState<Map<string, ITypingIndicator>>(
+      typingIndicatorService.getIndicators()
+    );
+
+    useEffect(() => {
+      // 订阅状态变化
+      return typingIndicatorService.onIndicatorsChange$.listen(setIndicators);
+    }, []);
+
     return (
       <div className="relative h-full">
         <div className="absolute inset-0">
@@ -107,6 +126,7 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
                   />
                 ))}
                 <TypingIndicator
+                  indicators={indicators}
                   getMemberName={agentInfo.getName}
                   getMemberAvatar={agentInfo.getAvatar}
                 />

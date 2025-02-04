@@ -2,7 +2,7 @@ import { RxEvent } from "@/lib/rx-event";
 
 export type TypingStatus = "typing" | "thinking" | null;
 
-export interface TypingIndicator {
+export interface ITypingIndicator {
   memberId: string;
   status: TypingStatus;
   timestamp: number;
@@ -24,14 +24,19 @@ export interface TypingIndicatorOptions {
 }
 
 export class TypingIndicatorService {
-  private indicators = new Map<string, TypingIndicator>();
+  private indicators = new Map<string, ITypingIndicator>();
   private cleanupTimer?: NodeJS.Timeout;
-  private DEFAULT_CLEANUP_INTERVAL = 200000;
+  private DEFAULT_CLEANUP_INTERVAL = 3000;
+  private DEFAULT_EXPIRATION_TIME = 30000;
 
-  readonly onIndicatorsChange$ = new RxEvent<Map<string, TypingIndicator>>();
+  readonly onIndicatorsChange$ = new RxEvent<Map<string, ITypingIndicator>>();
 
   constructor(private options: TypingIndicatorOptions = {}) {
-    const { enableAutoCleanup = true, cleanupInterval = this.DEFAULT_CLEANUP_INTERVAL } = options;
+    const { 
+      enableAutoCleanup = true, 
+      cleanupInterval = this.DEFAULT_CLEANUP_INTERVAL,
+      expirationTime = this.DEFAULT_EXPIRATION_TIME,
+    } = options;
 
     if (enableAutoCleanup) {
       this.startCleanupTimer(cleanupInterval);
@@ -115,7 +120,7 @@ export class TypingIndicatorService {
 
   private cleanup() {
     const now = Date.now();
-    const { expirationTime = 5000 } = this.options;
+    const { expirationTime = this.DEFAULT_EXPIRATION_TIME } = this.options;
     let hasChanges = false;
 
     for (const [memberId, indicator] of this.indicators) {

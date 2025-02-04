@@ -19,7 +19,6 @@ import {
   SpeakRequest,
 } from "./discussion/discussion-env";
 import { MENTION_RULE } from "./rules/constants";
-import { createKey } from "./typed-bus";
 
 /**
  * Agent的基础配置接口
@@ -154,10 +153,26 @@ export abstract class BaseAgent<S extends BaseAgentState = BaseAgentState> {
   protected setState(
     updates: Partial<S> | ((prevState: S) => Partial<S>)
   ): void {
+    const prevState = this.state;
     this.state = {
       ...this.state,
-      ...(typeof updates === "function" ? updates(this.state) : updates),
+      ...(typeof updates === "function" ? updates(prevState) : updates),
     };
+
+    // 当isThinking状态改变时，发送事件
+    if (
+      "isThinking" in this.state &&
+      prevState.isThinking !== this.state.isThinking
+    ) {
+      console.log(
+        `[Agent ${this.config.name}] isThinking changed:`,
+        this.state.isThinking
+      );
+      this.env.eventBus.emit(DiscussionKeys.Events.thinking, {
+        agentId: this.config.agentId,
+        isThinking: this.state.isThinking || false,
+      });
+    }
   }
 
   protected shouldRespond(message: AgentMessage): boolean {
@@ -182,7 +197,9 @@ export abstract class BaseAgent<S extends BaseAgentState = BaseAgentState> {
     }
 
     // 检查是否有人在说话
-    const currentSpeaker = this.env.stateBus.get(Keys.States.speaking);
+    const currentSpeaker = this.env.stateBus.get(
+      DiscussionKeys.States.speaking
+    );
     if (currentSpeaker) {
       return false;
     }
@@ -225,6 +242,7 @@ export abstract class BaseAgent<S extends BaseAgentState = BaseAgentState> {
   private async speak(message: AgentMessage): Promise<void> {
     let agentMessage: AgentMessage | null = null;
     try {
+      console.log(`[Agent ${this.config.name}] Starting to speak...`);
       this.env.stateBus.set(
         DiscussionKeys.States.speaking,
         this.config.agentId
@@ -236,6 +254,7 @@ export abstract class BaseAgent<S extends BaseAgentState = BaseAgentState> {
         agentMessage = await this.addMessage(response);
       }
     } finally {
+      console.log(`[Agent ${this.config.name}] Finished speaking...`);
       this.setState({
         isThinking: false,
         lastSpeakTime: new Date(),
@@ -310,17 +329,6 @@ export abstract class BaseAgent<S extends BaseAgentState = BaseAgentState> {
   }
 }
 
-export const Keys = {
-  Events: {
-    message: createKey<AgentMessage>("message"),
-    discussionStart: createKey<{ topic: string }>("discussionStart"),
-    discussionPause: createKey<void>("discussionPause"),
-  },
-  States: {
-    speaking: createKey<string | null>("speaking"),
-  },
-};
-
 // 添加系统默认 prompt 常量
 const SYSTEM_BASE_PROMPT = `你是 {{agent.name}}`;
 
@@ -329,9 +337,12 @@ const SYSTEM_BASE_PROMPT = `你是 {{agent.name}}`;
  */
 export class ChatAgent extends BaseAgent {
   protected onEnter(): void {
-    const off = this.env.eventBus.on(Keys.Events.message, (message) => {
-      this.onMessage(message);
-    });
+    const off = this.env.eventBus.on(
+      DiscussionKeys.Events.message,
+      (message: AgentMessage) => {
+        this.onMessage(message);
+      }
+    );
     this.addCleanup(off);
   }
 
@@ -355,7 +366,7 @@ export class ChatAgent extends BaseAgent {
         });
         messagesResource.current.reload();
         // 将执行结果添加到对话，并重新生成回复
-        this.env.eventBus.emit(Keys.Events.message, executionMessage);
+        this.env.eventBus.emit(DiscussionKeys.Events.message, executionMessage);
       }
     }
   };
@@ -376,8 +387,8 @@ export class ChatAgent extends BaseAgent {
 
     // 修改系统提示的构建逻辑
     let systemPrompt = [
-      this.processPromptTemplate(SYSTEM_BASE_PROMPT),  // 添加基础系统 prompt
-      this.getPrompt()     // 添加特定 agent 的 prompt
+      this.processPromptTemplate(SYSTEM_BASE_PROMPT), // 添加基础系统 prompt
+      this.getPrompt(), // 添加特定 agent 的 prompt
     ].join("\n\n");
 
     if (this.config.role === "moderator") {

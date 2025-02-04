@@ -99,6 +99,9 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.17(ts-node@10.9.2(@types/node@22.13.0)(typescript@5.6.3)))
     devDependencies:
+      '@babel/plugin-proposal-decorators':
+        specifier: ^7.25.9
+        version: 7.25.9(@babel/core@7.26.7)
       '@babel/preset-env':
         specifier: ^7.26.0
         version: 7.26.7(@babel/core@7.26.7)
@@ -322,6 +325,12 @@ packages:
     peerDependencies:
       '@babel/core': ^7.0.0
 
+  '@babel/plugin-proposal-decorators@7.25.9':
+    resolution: {integrity: sha512-smkNLL/O1ezy9Nhy4CNosc4Va+1wo5w4gzSZeLe6y6dM4mmHfYOCPolXQPHQxonZCF+ZyebxN9vqOolkYrSn5g==}
+    engines: {node: '>=6.9.0'}
+    peerDependencies:
+      '@babel/core': ^7.0.0-0
+
   '@babel/plugin-proposal-private-property-in-object@7.21.0-placeholder-for-preset-env.2':
     resolution: {integrity: sha512-SOSkfJDddaM7mak6cPEpswyTRnuRltl429hMraQEglW+OkovnCzsiszTmsrlY//qLFjCpQDFRvjdm2wA5pPm9w==}
     engines: {node: '>=6.9.0'}
@@ -345,6 +354,12 @@ packages:
 
   '@babel/plugin-syntax-class-static-block@7.14.5':
     resolution: {integrity: sha512-b+YyPmr6ldyNnM6sqYeMWE+bgJcJpO6yS4QD7ymxgH34GBPNDM/THBh8iunyvKIZztiwLH4CJZ0RxTk9emgpjw==}
+    engines: {node: '>=6.9.0'}
+    peerDependencies:
+      '@babel/core': ^7.0.0-0
+
+  '@babel/plugin-syntax-decorators@7.25.9':
+    resolution: {integrity: sha512-ryzI0McXUPJnRCvMo4lumIKZUzhYUO/ScI+Mz4YVaTLt04DHNSjEUjKVvbzQjZFLuod/cYEc07mJWhzl6v4DPg==}
     engines: {node: '>=6.9.0'}
     peerDependencies:
       '@babel/core': ^7.0.0-0
@@ -4099,6 +4114,15 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@babel/plugin-proposal-decorators@7.25.9(@babel/core@7.26.7)':
+    dependencies:
+      '@babel/core': 7.26.7
+      '@babel/helper-create-class-features-plugin': 7.25.9(@babel/core@7.26.7)
+      '@babel/helper-plugin-utils': 7.26.5
+      '@babel/plugin-syntax-decorators': 7.25.9(@babel/core@7.26.7)
+    transitivePeerDependencies:
+      - supports-color
+
   '@babel/plugin-proposal-private-property-in-object@7.21.0-placeholder-for-preset-env.2(@babel/core@7.26.7)':
     dependencies:
       '@babel/core': 7.26.7
@@ -4119,6 +4143,11 @@ snapshots:
       '@babel/helper-plugin-utils': 7.26.5
 
   '@babel/plugin-syntax-class-static-block@7.14.5(@babel/core@7.26.7)':
+    dependencies:
+      '@babel/core': 7.26.7
+      '@babel/helper-plugin-utils': 7.26.5
+
+  '@babel/plugin-syntax-decorators@7.25.9(@babel/core@7.26.7)':
     dependencies:
       '@babel/core': 7.26.7
       '@babel/helper-plugin-utils': 7.26.5

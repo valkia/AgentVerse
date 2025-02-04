@@ -8,6 +8,8 @@ export const DiscussionKeys = {
     message: createKey<AgentMessage>("message"),
     discussionStart: createKey<{ topic: string }>("discussionStart"),
     discussionPause: createKey<void>("discussionPause"),
+    discussionResume: createKey<void>("discussionResume"),
+    thinking: createKey<{ agentId: string; isThinking: boolean }>("thinking"),
   },
   States: {
     speaking: createKey<string | null>("speaking"),

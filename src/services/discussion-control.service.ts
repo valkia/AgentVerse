@@ -1,11 +1,12 @@
 import { DEFAULT_SETTINGS } from "@/config/settings";
-import { BaseAgent, ChatAgent, Keys } from "@/lib/agent";
+import { BaseAgent, ChatAgent } from "@/lib/agent";
 import { CapabilityRegistry } from "@/lib/capabilities";
-import { DiscussionEnvBus } from "@/lib/discussion/discussion-env";
+import { DiscussionEnvBus, DiscussionKeys } from "@/lib/discussion/discussion-env";
 import { RxEvent } from "@/lib/rx-event";
 import { agentListResource, discussionMembersResource } from "@/resources";
 import { discussionCapabilitiesResource } from "@/resources/discussion-capabilities.resource";
 import { discussionMemberService } from "@/services/discussion-member.service";
+import { typingIndicatorService } from "@/services/typing-indicator.service";
 import { AgentMessage } from "@/types/discussion";
 import { DiscussionMember } from "@/types/discussion-member";
 import { createNestedBean, createProxyBean } from "rx-nested-bean";
@@ -69,6 +70,8 @@ export class DiscussionControlService {
   private agents: Map<string, BaseAgent> = new Map();
   private env: DiscussionEnvBus;
 
+  private cleanupHandlers: Array<() => void> = [];
+
   constructor() {
     this.env = new DiscussionEnvBus();
 
@@ -77,9 +80,20 @@ export class DiscussionControlService {
     });
 
     // 监听 members 变化
-    this.membersBean.$.subscribe((members) => {
+    const membersSub = this.membersBean.$.subscribe((members) => {
       this.syncAgentsWithMembers(members);
     });
+    this.cleanupHandlers.push(() => membersSub.unsubscribe());
+
+    // 监听 thinking 状态变化
+    const thinkingOff = this.env.eventBus.on(DiscussionKeys.Events.thinking, (state) => {
+      const { agentId, isThinking } = state;
+      typingIndicatorService.updateStatus(
+        agentId,
+        isThinking ? "thinking" : null
+      );
+    });
+    this.cleanupHandlers.push(thinkingOff);
   }
 
   private syncAgentsWithMembers(members: DiscussionMember[]) {
@@ -159,7 +173,7 @@ export class DiscussionControlService {
   }
 
   onMessage(message: AgentMessage) {
-    this.env.eventBus.emit(Keys.Events.message, message);
+    this.env.eventBus.emit(DiscussionKeys.Events.message, message);
   }
 
   async run() {
@@ -198,12 +212,12 @@ export class DiscussionControlService {
       this.isPausedBean.set(false);
 
       // 发送讨论开始事件，agents会自动响应
-      this.env.eventBus.emit(Keys.Events.discussionStart, { topic });
+      this.env.eventBus.emit(DiscussionKeys.Events.discussionStart, { topic });
 
       // 发送一个初始消息来启动讨论
       const moderator = this.agents.get(selectedIds[0]);
       if (moderator) {
-        this.env.eventBus.emit(Keys.Events.message, {
+        this.env.eventBus.emit(DiscussionKeys.Events.message, {
           agentId: "system",
           content: `用户：${topic}`,
           type: "text",
@@ -236,12 +250,15 @@ export class DiscussionControlService {
   pause() {
     this.isPausedBean.set(true);
     // 发送讨论暂停事件
-    this.env.eventBus.emit(Keys.Events.discussionPause, null);
-    this.cleanup();
+    this.env.eventBus.emit(DiscussionKeys.Events.discussionPause, null);
+    // this.cleanup();
   }
 
   private cleanup() {
     this.timeoutManager.clearAll();
+    // 清理所有事件监听器
+    this.cleanupHandlers.forEach(cleanup => cleanup());
+    this.cleanupHandlers = [];
   }
 
   clearMessages() {
@@ -250,6 +267,34 @@ export class DiscussionControlService {
     this.currentRoundBean.set(0);
     this.currentSpeakerIndexBean.set(-1);
     this.settingsBean.set(DEFAULT_SETTINGS);
+  }
+
+  private resetState() {
+    this.messagesBean.set([]);
+    this.isPausedBean.set(true);
+    this.currentDiscussionIdBean.set(null);
+    this.settingsBean.set(DEFAULT_SETTINGS);
+    this.currentRoundBean.set(0);
+    this.currentSpeakerIndexBean.set(-1);
+    this.membersBean.set([]);
+    this.topicBean.set("");
+  }
+
+  destroy() {
+    // 清理所有代理
+    for (const agent of this.agents.values()) {
+      agent.leaveEnv();
+    }
+    this.agents.clear();
+
+    // 清理环境
+    this.env.destroy();
+
+    // 清理其他资源
+    this.cleanup();
+
+    // 重置所有状态
+    this.resetState()
   }
 
   private handleError(
