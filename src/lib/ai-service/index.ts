@@ -4,7 +4,6 @@ import {
   ChatCompletionCreateParams,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
-export * from './message-converter';
 
 // 错误类
 export class AIServiceError extends Error {

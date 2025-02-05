@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Markdown } from "@/components/ui/markdown";
+import { MessageMarkdownContent } from "@/components/discussion/message-markdown-content";
 import {
   ScrollableLayout,
   ScrollableLayoutRef,
@@ -10,7 +10,7 @@ import {
   ITypingIndicator,
   typingIndicatorService,
 } from "@/services/typing-indicator.service";
-import { AgentMessage } from "@/types/discussion";
+import { AgentMessage, MessageWithResults } from "@/types/discussion";
 import { ArrowDown } from "lucide-react";
 import {
   forwardRef,
@@ -20,9 +20,10 @@ import {
   useState,
 } from "react";
 import { TypingIndicator } from "./typing-indicator";
+import { reorganizeMessages } from "@/lib/discussion/message-utils";
 
 interface MessageItemProps {
-  message: AgentMessage;
+  message: MessageWithResults;
   agentInfo: {
     getName: (agentId: string) => string;
     getAvatar: (agentId: string) => string;
@@ -51,7 +52,10 @@ function MessageItem({ message, agentInfo }: MessageItemProps) {
             </time>
           </div>
           <div className="mt-1 text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg break-words">
-            <Markdown content={message.content} />
+            <MessageMarkdownContent 
+              content={message.content} 
+              actionResults={message.actionResults}
+            />
           </div>
         </div>
       </div>
@@ -106,6 +110,10 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
       return typingIndicatorService.onIndicatorsChange$.listen(setIndicators);
     }, []);
 
+    // 重组消息
+    console.log("[MessageList] messages:", messages);
+    const reorganizedMessages = reorganizeMessages(messages);
+
     return (
       <div className="relative h-full">
         <div className="absolute inset-0">
@@ -118,7 +126,7 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
           >
             <div className="py-4">
               <div className="space-y-4">
-                {messages.map((message) => (
+                {reorganizedMessages.map((message) => (
                   <MessageItem
                     key={message.id}
                     message={message}

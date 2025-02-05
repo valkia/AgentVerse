@@ -8,7 +8,7 @@ import { useMessages } from "@/hooks/useMessages";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { discussionControlService } from "@/services/discussion-control.service";
-import { Discussion } from "@/types/discussion";
+import { Discussion, NormalMessage } from "@/types/discussion";
 import { useEffect } from "react";
 import { useBeanState } from "rx-nested-bean";
 
@@ -40,7 +40,7 @@ export function App() {
 
   useEffect(() => {
     if (messages.length > 0) {
-      discussionControlService.setTopic(messages[0].content);
+      discussionControlService.setTopic((messages[0] as NormalMessage).content);
     }
     discussionControlService.setMessages(messages);
   }, [messages]);

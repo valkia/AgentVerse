@@ -115,10 +115,17 @@ const capabilities: Capability[] = [
     properties:
       id: string - 成员ID
       agentId: string - 关联的Agent ID
+      agentName: string - Agent名称
       isAutoReply: boolean - 是否自动回复
 `,
     execute: async () => {
-      return discussionMembersResource.current.read().data;
+      const members = discussionMembersResource.current.read().data;
+      const agents = agentListResource.read().data;
+      
+      return members.map(member => ({
+        ...member,
+        agentName: agents.find(agent => agent.id === member.agentId)?.name || '未知'
+      }));
     },
   },
   {
@@ -155,7 +162,7 @@ const capabilities: Capability[] = [
       await discussionMemberService.createMany(discussionId, [
         {
           agentId,
-          isAutoReply: true,
+          isAutoReply: false,
         },
       ]);
       return discussionMembersResource.current.reload();

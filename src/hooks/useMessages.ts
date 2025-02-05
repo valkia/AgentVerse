@@ -1,12 +1,12 @@
-import { AgentMessage } from "@/types/discussion";
-import { messagesResource } from "@/resources";
-import { messageService } from "@/services/message.service";
 import { useResourceState } from "@/lib/resource";
-import { useMemoizedFn } from "ahooks";
+import { messagesResource } from "@/resources";
 import { discussionControlService } from "@/services/discussion-control.service";
+import { messageService } from "@/services/message.service";
+import { AgentMessage, NormalMessage } from "@/types/discussion";
+import { useMemoizedFn } from "ahooks";
+import { nanoid } from "nanoid";
 import { useProxyBeanState } from "packages/rx-nested-bean/src";
 import { useOptimisticUpdate } from "./useOptimisticUpdate";
-import { nanoid } from "nanoid";
 
 export function useMessages() {
   const resourceState = useResourceState(messagesResource.current);
@@ -14,7 +14,7 @@ export function useMessages() {
     discussionControlService.store,
     "currentDiscussionId"
   );
-  
+
   const withOptimisticUpdate = useOptimisticUpdate(resourceState);
 
   const addMessage = useMemoizedFn(
@@ -39,7 +39,7 @@ export function useMessages() {
             type,
             timestamp,
             discussionId: currentDiscussionId,
-          },
+          } as NormalMessage,
         ],
         // API 调用
         () =>
@@ -48,7 +48,7 @@ export function useMessages() {
             agentId,
             type,
             timestamp,
-          })
+          } as Omit<NormalMessage, "id" | "discussionId">)
       );
     }
   );

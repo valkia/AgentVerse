@@ -1,13 +1,16 @@
 import { DEFAULT_SETTINGS } from "@/config/settings";
 import { BaseAgent, ChatAgent } from "@/lib/agent";
 import { CapabilityRegistry } from "@/lib/capabilities";
-import { DiscussionEnvBus, DiscussionKeys } from "@/lib/discussion/discussion-env";
+import {
+  DiscussionEnvBus,
+  DiscussionKeys,
+} from "@/lib/discussion/discussion-env";
 import { RxEvent } from "@/lib/rx-event";
 import { agentListResource, discussionMembersResource } from "@/resources";
 import { discussionCapabilitiesResource } from "@/resources/discussion-capabilities.resource";
 import { discussionMemberService } from "@/services/discussion-member.service";
 import { typingIndicatorService } from "@/services/typing-indicator.service";
-import { AgentMessage } from "@/types/discussion";
+import { AgentMessage, NormalMessage } from "@/types/discussion";
 import { DiscussionMember } from "@/types/discussion-member";
 import { createNestedBean, createProxyBean } from "rx-nested-bean";
 import { agentSelector } from "./agent-selector.service";
@@ -48,7 +51,7 @@ export class DiscussionControlService {
   });
 
   onRequestSendMessage$ = new RxEvent<
-    Pick<AgentMessage, "agentId" | "content" | "type">
+    Pick<NormalMessage, "agentId" | "content" | "type">
   >();
   onError$ = new RxEvent<Error>();
   onCurrentDiscussionIdChange$ = new RxEvent<string | null>();
@@ -86,13 +89,16 @@ export class DiscussionControlService {
     this.cleanupHandlers.push(() => membersSub.unsubscribe());
 
     // 监听 thinking 状态变化
-    const thinkingOff = this.env.eventBus.on(DiscussionKeys.Events.thinking, (state) => {
-      const { agentId, isThinking } = state;
-      typingIndicatorService.updateStatus(
-        agentId,
-        isThinking ? "thinking" : null
-      );
-    });
+    const thinkingOff = this.env.eventBus.on(
+      DiscussionKeys.Events.thinking,
+      (state) => {
+        const { agentId, isThinking } = state;
+        typingIndicatorService.updateStatus(
+          agentId,
+          isThinking ? "thinking" : null
+        );
+      }
+    );
     this.cleanupHandlers.push(thinkingOff);
   }
 
@@ -257,7 +263,7 @@ export class DiscussionControlService {
   private cleanup() {
     this.timeoutManager.clearAll();
     // 清理所有事件监听器
-    this.cleanupHandlers.forEach(cleanup => cleanup());
+    this.cleanupHandlers.forEach((cleanup) => cleanup());
     this.cleanupHandlers = [];
   }
 
@@ -294,7 +300,7 @@ export class DiscussionControlService {
     this.cleanup();
 
     // 重置所有状态
-    this.resetState()
+    this.resetState();
   }
 
   private handleError(

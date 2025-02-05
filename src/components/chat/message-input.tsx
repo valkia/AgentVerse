@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useAgents } from "@/hooks/useAgents";
 import { useMemberSelection } from "@/hooks/useMemberSelection";
 import { cn } from "@/lib/utils";
@@ -29,7 +29,7 @@ export function MessageInput({
 
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,9 +49,9 @@ export function MessageInput({
   const inputPlaceholder = isFirstMessage
     ? "请输入讨论主题，主持人将开启讨论..."
     : selectedMemberId === 'self'
-    ? "以我的身份发送消息... (Cmd/Ctrl + Enter 发送)"
+    ? "以我的身份发送消息... (Cmd/Ctrl + Enter 发送，Shift + Enter 换行)"
     : selectedAgent
-    ? `以 ${getAgentName(selectedAgent.id)} 的身份发送消息... (Cmd/Ctrl + Enter 发送)`
+    ? `以 ${getAgentName(selectedAgent.id)} 的身份发送消息... (Cmd/Ctrl + Enter 发送，Shift + Enter 换行)`
     : "请先选择发送者...";
 
   return (
@@ -68,25 +68,32 @@ export function MessageInput({
         />
 
         <form onSubmit={handleSubmit} className="flex gap-2">
-          <Input
+          <Textarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+              if (e.key === "Enter") {
+                if (e.shiftKey) {
+                  // Shift + Enter: 插入换行
+                  return;
+                }
+                // 普通回车或 Cmd/Ctrl + Enter: 提交
+                e.preventDefault();
                 handleSubmit(e);
               }
             }}
             placeholder={inputPlaceholder}
-            className="flex-1 h-9 text-sm"
+            className="flex-1 min-h-[2.25rem] max-h-32 text-sm resize-none py-1.5"
             disabled={!selectedMemberId || isLoading}
+            rows={1}
           />
           <Button
             type="submit"
             size="sm"
             disabled={!canSubmit}
             className={cn(
-              "transition-all px-2 h-9 min-w-[36px]",
+              "transition-all px-2 h-9 min-w-[36px] self-end",
               canSubmit
                 ? "bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
                 : "opacity-50 cursor-not-allowed"
