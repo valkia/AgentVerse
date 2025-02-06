@@ -1,3 +1,5 @@
+import { MarkdownActionResults } from "@/components/discussion/markdown";
+
 // 基础消息类型
 export interface BaseMessage {
   id: string;
@@ -32,16 +34,7 @@ export interface ActionResultMessage extends BaseMessage {
 
 // 带有 action 结果的消息
 export interface MessageWithResults extends NormalMessage {
-  actionResults?: {
-    [operationId: string]: {
-      capability: string;
-      description: string;  // GPT生成的操作描述
-      params: Record<string, unknown>;
-      status: 'success' | 'error';
-      result?: unknown;
-      error?: string;
-    }
-  }
+  actionResults?: MarkdownActionResults;
 }
 
 export type AgentMessage = NormalMessage | ActionResultMessage;

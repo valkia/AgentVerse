@@ -5,8 +5,8 @@ import {
 import { ActionDef, ActionParser } from "@/lib/agent/action-parser";
 import {
   CapabilityRegistry,
-  generateCapabilityPrompt,
 } from "@/lib/capabilities";
+import { generateCapabilityPrompt } from "./prompts";
 import { generateId } from "@/lib/utils";
 import {
   agentListResource,

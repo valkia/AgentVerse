@@ -1,4 +1,9 @@
-import { AgentMessage, MessageWithResults, NormalMessage } from "@/types/discussion";
+import { MarkdownActionResults } from "@/components/discussion/markdown";
+import {
+  AgentMessage,
+  MessageWithResults,
+  NormalMessage,
+} from "@/types/discussion";
 
 // 定义消息合并的时间阈值（毫秒）
 const MESSAGE_MERGE_THRESHOLD = 3 * 60 * 1000; // 3分钟
@@ -21,7 +26,8 @@ function shouldMergeMessages(
   }
 
   // 如果时间间隔超过阈值，不合并
-  const timeGap = new Date(next.timestamp).getTime() - new Date(current.timestamp).getTime();
+  const timeGap =
+    new Date(next.timestamp).getTime() - new Date(current.timestamp).getTime();
   if (timeGap > MESSAGE_MERGE_THRESHOLD) {
     return false;
   }
@@ -29,41 +35,47 @@ function shouldMergeMessages(
   return true;
 }
 
-type ActionResultType = {
-  capability: string;
-  params: Record<string, unknown>;
-  status: 'success' | 'error';
-  result?: unknown;
-  error?: string;
-  description: string;
-};
+// type ActionResultType = {
+//   capability: string;
+//   params: Record<string, unknown>;
+//   status: "success" | "error";
+//   result?: unknown;
+//   error?: string;
+//   description: string;
+// };
 
 /**
  * 第一阶段：合并消息和其对应的action结果
  */
 function mergeActionResults(messages: AgentMessage[]): MessageWithResults[] {
   const result: MessageWithResults[] = [];
-  
+
   for (let i = 0; i < messages.length; i++) {
     const current = messages[i];
-    
+
     if (current.type === "text") {
       const next = messages[i + 1];
-      
-      if (next?.type === "action_result" && next.originMessageId === current.id) {
+
+      if (
+        next?.type === "action_result" &&
+        next.originMessageId === current.id
+      ) {
         // 构建 actionResults 对象
-        const actionResults = next.results.reduce((acc: Record<string, ActionResultType>, r) => {
-          acc[r.operationId] = {
-            capability: r.capability,
-            params: r.params,
-            status: r.status,
-            result: r.result,
-            error: r.error,
-            description: r.description,
-          };
-          return acc;
-        }, {});
-        
+        const actionResults = next.results.reduce(
+          (acc: MarkdownActionResults, r) => {
+            acc[r.operationId] = {
+              // capability: r.capability,
+              // params: r.params,
+              status: r.status,
+              result: r.result,
+              error: r.error,
+              // description: r.description,
+            };
+            return acc;
+          },
+          {}
+        );
+
         result.push({
           ...current,
           actionResults,
@@ -74,7 +86,7 @@ function mergeActionResults(messages: AgentMessage[]): MessageWithResults[] {
       }
     }
   }
-  
+
   return result;
 }
 
@@ -87,7 +99,7 @@ function mergeActionResultsObjects(
 ): MessageWithResults["actionResults"] {
   if (!current) return next;
   if (!next) return current;
-  
+
   return {
     ...current,
     ...next,
@@ -97,15 +109,17 @@ function mergeActionResultsObjects(
 /**
  * 第二阶段：合并相邻的消息
  */
-function mergeAdjacentMessages(messages: MessageWithResults[]): MessageWithResults[] {
+function mergeAdjacentMessages(
+  messages: MessageWithResults[]
+): MessageWithResults[] {
   const result: MessageWithResults[] = [];
-  
+
   for (let i = 0; i < messages.length; i++) {
     const current = messages[i];
     let mergedContent = current.content;
     let mergedActionResults = current.actionResults;
     let nextIndex = i + 1;
-    
+
     // 检查并合并后续消息
     while (
       nextIndex < messages.length &&
@@ -113,10 +127,13 @@ function mergeAdjacentMessages(messages: MessageWithResults[]): MessageWithResul
     ) {
       const next = messages[nextIndex];
       mergedContent += "\n\n" + next.content;
-      mergedActionResults = mergeActionResultsObjects(mergedActionResults, next.actionResults);
+      mergedActionResults = mergeActionResultsObjects(
+        mergedActionResults,
+        next.actionResults
+      );
       nextIndex++;
     }
-    
+
     if (nextIndex > i + 1) {
       // 有消息被合并
       result.push({
@@ -130,7 +147,7 @@ function mergeAdjacentMessages(messages: MessageWithResults[]): MessageWithResul
       result.push(current);
     }
   }
-  
+
   return result;
 }
 
@@ -142,7 +159,7 @@ export function reorganizeMessages(
 ): MessageWithResults[] {
   // 第一阶段：合并action结果
   const messagesWithActions = mergeActionResults(messages);
-  
+
   // 第二阶段：合并相邻消息
   return mergeAdjacentMessages(messagesWithActions);
 }

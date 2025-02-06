@@ -31,11 +31,11 @@ export class ActionParser {
   parse(content: string): ActionParseResult[] {
     const operations: ActionParseResult[] = [];
 
-    // 匹配 :::action 语法，更健壮的版本：
-    // 1. 允许 :::action 后面可以有或没有换行
-    // 2. 允许结束的 ::: 前面可以有或没有换行
+    // 匹配 :::action 语法，支持内联和多行格式：
+    // 1. :::action 后可以是空格或换行
+    // 2. 结束的 ::: 前可以是空格或换行
     // 3. 使用非贪婪匹配确保正确匹配嵌套的情况
-    const actionRegex = /:::action\s*(?:\n|\s)([\s\S]*?)(?:\n|\s):::\s*/g;
+    const actionRegex = /:::action(?:\s+|\s*\n)([\s\S]*?)(?:\s*\n|)\s*:::\s*/g;
     let match;
 
     while ((match = actionRegex.exec(content)) !== null) {

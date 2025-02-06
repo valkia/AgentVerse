@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 import { useAgents } from "@/hooks/useAgents";
 import { useMemberSelection } from "@/hooks/useMemberSelection";
 import { cn } from "@/lib/utils";
@@ -68,7 +68,7 @@ export function MessageInput({
         />
 
         <form onSubmit={handleSubmit} className="flex gap-2">
-          <Textarea
+          <AutoResizeTextarea
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -84,9 +84,10 @@ export function MessageInput({
               }
             }}
             placeholder={inputPlaceholder}
-            className="flex-1 min-h-[2.25rem] max-h-32 text-sm resize-none py-1.5"
+            className="flex-1 min-h-[2.25rem] text-sm"
             disabled={!selectedMemberId || isLoading}
-            rows={1}
+            minRows={1}
+            maxRows={8}
           />
           <Button
             type="submit"

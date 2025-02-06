@@ -1,10 +1,11 @@
+import { MessageMarkdownContent } from "@/components/discussion/message-actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageMarkdownContent } from "@/components/discussion/message-markdown-content";
 import {
   ScrollableLayout,
   ScrollableLayoutRef,
 } from "@/layouts/scrollable-layout";
+import { reorganizeMessages } from "@/lib/discussion/message-utils";
 import { cn } from "@/lib/utils";
 import {
   ITypingIndicator,
@@ -20,7 +21,6 @@ import {
   useState,
 } from "react";
 import { TypingIndicator } from "./typing-indicator";
-import { reorganizeMessages } from "@/lib/discussion/message-utils";
 
 interface MessageItemProps {
   message: MessageWithResults;
@@ -52,8 +52,8 @@ function MessageItem({ message, agentInfo }: MessageItemProps) {
             </time>
           </div>
           <div className="mt-1 text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg break-words">
-            <MessageMarkdownContent 
-              content={message.content} 
+            <MessageMarkdownContent
+              content={message.content}
               actionResults={message.actionResults}
             />
           </div>

@@ -46,7 +46,8 @@
     "rx-nested-bean": "workspace:*",
     "rxjs": "^7.8.1",
     "tailwind-merge": "^2.5.5",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "unified": "^11.0.5"
   },
   "devDependencies": {
     "@babel/plugin-proposal-decorators": "^7.25.9",

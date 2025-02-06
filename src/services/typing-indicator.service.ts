@@ -26,14 +26,14 @@ export interface TypingIndicatorOptions {
 export class TypingIndicatorService {
   private indicators = new Map<string, ITypingIndicator>();
   private cleanupTimer?: NodeJS.Timeout;
-  private DEFAULT_CLEANUP_INTERVAL = 3000;
-  private DEFAULT_EXPIRATION_TIME = 30000;
+  private DEFAULT_CLEANUP_INTERVAL = 60000;
+  private DEFAULT_EXPIRATION_TIME = 60000;
 
   readonly onIndicatorsChange$ = new RxEvent<Map<string, ITypingIndicator>>();
 
   constructor(private options: TypingIndicatorOptions = {}) {
-    const { 
-      enableAutoCleanup = true, 
+    const {
+      enableAutoCleanup = true,
       cleanupInterval = this.DEFAULT_CLEANUP_INTERVAL,
     } = options;
 

@@ -1,5 +1,7 @@
 import { Capability } from "@/lib/capabilities";
 import { createResource } from "@/lib/resource";
+import { eventBus } from "@/core/env";
+import { USER_SELECT } from "@/core/events";
 import {
   agentListResource,
   discussionMembersResource
@@ -198,71 +200,72 @@ const capabilities: Capability[] = [
       return discussionMembersResource.current.reload();
     },
   },
-  // {
-  //   name: "requestAgentResponse",
-  //   description: `
-  // 请求指定Agent对当前话题进行回复
-  // ---
-  // 输入参数：
-  //   type: object
-  //   required: true
-  //   properties:
-  //     agentId:
-  //       type: string
-  //       description: 要请求回复的Agent ID
-  //       required: true
-  //     message:
-  //       type: string
-  //       description: 要回复的消息内容
-  //       required: true
-  // 
-  // 返回值：
-  //   type: boolean
-  //   description: 请求是否成功
-  // `,
-  //   execute: async ({
-  //     agentId,
-  //     // message,
-  //   }: {
-  //     agentId: string;
-  //     message: string;
-  //   }) => {
-  //     const agent = discussionControlService.getAgent(agentId);
-  //     if (!agent) return null;
-  //     // 通过事件系统触发消息
-  //     // discussionControlService.onRequestSendMessage$.next({
-  //     //   agentId,
-  //     //   content: message,
-  //     //   type: "text",
-  //     // });
-  //     return true;
-  //   },
-  // },
-  // {
-  //   name: "getDiscussionHistory",
-  //   description: `
-  // 获取当前讨论的历史消息
-  // ---
-  // 输入参数：
-  //   无
-  // 
-  // 返回值：
-  //   type: array
-  //   items:
-  //     type: object
-  //     properties:
-  //       id: string - 消息ID
-  //       content: string - 消息内容
-  //       type: string - 消息类型
-  //       senderId: string - 发送者ID
-  //       timestamp: string - 发送时间
-  // `,
-  //   execute: async () => {
-  //     return messagesResource.current.read().data;
-  //   },
-  // },
+  {
+    name: "userSelect",
+    description: `
+向用户展示选项并获取其选择。
+
+使用场景：
+1. 需要用户在多个选项中做出选择
+2. 收集用户对某个问题的具体偏好
+3. 引导用户完成分步骤的决策过程
+
+输入参数：
+  options: 选项列表，每个选项包含：
+    - value: 选项值
+    - label: 显示文本
+    - description: 选项描述（可选）
+  multiple: 是否允许多选（默认false）
+  defaultValue: 默认选中的值（可选）
+
+返回值：
+  selected: 用户选择的值（单选为string，多选为string[]）
+
+示例：
+:::action
+{
+  "capability": "userSelect",
+  "description": "请选择开发框架",
+  "params": {
+    "options": [
+      {
+        "value": "next",
+        "label": "Next.js",
+        "description": "React全栈框架"
+      }
+    ]
+  }
+}
+:::
+`,
+    execute: async (params) => {
+      // 验证参数
+      if (!Array.isArray(params.options) || params.options.length === 0) {
+        throw new Error("选项列表不能为空");
+      }
+
+      // 等待用户选择事件
+      return new Promise((resolve, reject) => {
+        const handleUserSelect = (event: { operationId: string; selected: string | string[] }) => {
+          // 移除事件监听
+          eventBus.off(USER_SELECT, handleUserSelect);
+          resolve({ selected: event.selected });
+        };
+
+        // 添加事件监听
+        eventBus.on(USER_SELECT, handleUserSelect);
+
+        // 设置超时（可选）
+        setTimeout(() => {
+          eventBus.off(USER_SELECT, handleUserSelect);
+          reject(new Error("用户选择超时"));
+        }, 5 * 60 * 1000); // 5分钟超时
+      });
+    },
+  },
 ];
 
 export const discussionCapabilitiesResource = createResource(() =>
   Promise.resolve(capabilities)
 );
+

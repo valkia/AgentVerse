@@ -184,6 +184,14 @@ export class DiscussionControlService {
 
   async run() {
     if (!this.isPausedBean.get()) return;
+    if (this.messagesBean.get().length > 0) {
+      this.isPausedBean.set(false);
+      this.env.eventBus.emit(
+        DiscussionKeys.Events.message,
+        this.messagesBean.get()[this.messagesBean.get().length - 1]
+      );
+      return;
+    }
 
     try {
       const topic = this.topicBean.get();
