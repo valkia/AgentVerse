@@ -1,4 +1,4 @@
-# MultiAgent Chat
+# AgentVerse
 
 让多个 AI 智能体协同对话，激发思维的火花 ✨
 
@@ -10,7 +10,7 @@
 
 ## 🚀 在线演示
 
-访问在线演示：[Demo](https://agent.dimstack.com/)
+访问在线演示：[Demo](https://apps.eiooie.com/muti-chat/)
 
 ## ✨ 特性
 
@@ -81,6 +81,11 @@ pnpm dev
 近期：
 - [ ] 主题切换（亮暗主题）
 - [ ] 移动端适配
+
+后续：
+- [ ] 对话历史与导出
+- [ ] 角色模板市场
+- [ ] 自定义提示词
 
 ## 🤝 贡献指南
 

@@ -1,4 +1,4 @@
-# MultiAgent Chat
+# AgentVerse
 
 Spark Ideas Through AI Collaboration ✨
 
@@ -10,7 +10,7 @@ English | [简体中文](./README.md)
 
 ## 🚀 Online Demo
 
-Visit our online demo: [Demo](https://agent.dimstack.com/)
+Visit our online demo: [Demo](https://apps.eiooie.com/muti-chat/)
 
 ## ✨ Features
 
@@ -81,6 +81,11 @@ pnpm dev
 Near-term:
 - [ ] Theme switching (light/dark)
 - [ ] Mobile responsiveness
+
+Future:
+- [ ] Chat history and export
+- [ ] Role template marketplace
+- [ ] Custom prompt templates
 
 ## 🤝 Contributing
 
