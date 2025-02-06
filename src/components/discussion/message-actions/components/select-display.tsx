@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { SelectDisplayProps } from "../types";
 import { SelectOptionItem } from "./select-option";
 
@@ -9,11 +10,11 @@ export function SelectDisplay({
   onSelect,
   disabled
 }: SelectDisplayProps) {
-  const [selected, setSelected] = useState<string | string[]>(
+  const [selected, setSelected] = useState<string | string[]>(() => 
     defaultValue || (multiple ? [] : "")
   );
 
-  // 当 defaultValue 改变时更新选择状态
+  // 当有默认值时更新选择状态
   useEffect(() => {
     if (defaultValue !== undefined) {
       setSelected(defaultValue);
@@ -23,19 +24,23 @@ export function SelectDisplay({
   const handleSelect = (value: string) => {
     if (disabled) return;
     
-    let newSelected: string | string[];
     if (multiple) {
-      newSelected = Array.isArray(selected) 
-        ? selected.includes(value)
-          ? selected.filter(v => v !== value)
-          : [...selected, value]
-        : [value];
+      setSelected(prev => {
+        if (!Array.isArray(prev)) return [value];
+        return prev.includes(value) 
+          ? prev.filter(v => v !== value)
+          : [...prev, value];
+      });
     } else {
-      newSelected = value;
+      setSelected(value);
+      onSelect?.(value); // 单选时直接触发
     }
-    
-    setSelected(newSelected);
-    onSelect?.(newSelected);
+  };
+
+  const handleConfirm = () => {
+    if (disabled) return;
+    if (!Array.isArray(selected) || selected.length === 0) return;
+    onSelect?.(selected);
   };
 
   return (
@@ -54,6 +59,16 @@ export function SelectDisplay({
           onClick={() => handleSelect(option.value)}
         />
       ))}
+      
+      {multiple && !disabled && (
+        <Button 
+          className="mt-2"
+          onClick={handleConfirm}
+          disabled={!Array.isArray(selected) || selected.length === 0}
+        >
+          确认选择 ({Array.isArray(selected) ? selected.length : 0})
+        </Button>
+      )}
     </div>
   );
 } 

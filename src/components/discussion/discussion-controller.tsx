@@ -10,6 +10,9 @@ import { SettingSelect } from "./setting-select";
 import { SettingSlider } from "./setting-slider";
 import { SettingSwitch } from "./setting-switch";
 import { ClearMessagesButton } from "./clear-messages-button";
+import { ITypingIndicator, typingIndicatorService } from "@/services/typing-indicator.service";
+import { TypingIndicator } from "../chat/typing-indicator";
+import { agentListResource } from "@/resources";
 
 type ModerationStyle = "strict" | "relaxed";
 
@@ -102,6 +105,9 @@ export function DiscussionController({
     "settings"
   );
   const { members } = useDiscussionMembers();
+  const [indicators, setIndicators] = useState<Map<string, ITypingIndicator>>(
+    typingIndicatorService.getIndicators()
+  );
 
   useEffect(() => {
     discussionControlService.setMembers(members);
@@ -130,7 +136,21 @@ export function DiscussionController({
     });
   }, [onSendMessage]);
 
+  useEffect(() => {
+    return typingIndicatorService.onIndicatorsChange$.listen(setIndicators);
+  }, []);
+
   const isActive = status === "active";
+
+  const getAgentInfo = () => {
+    const agents = agentListResource.read().data;
+    return {
+      getName: (agentId: string) => 
+        agents.find(agent => agent.id === agentId)?.name || agentId,
+      getAvatar: (agentId: string) => 
+        agents.find(agent => agent.id === agentId)?.avatar || "",
+    };
+  };
 
   return (
     <div className="rounded-lg border bg-card p-3">
@@ -156,9 +176,18 @@ export function DiscussionController({
             )}
           </Button>
 
-          <span className="text-sm text-muted-foreground">
-            {isActive ? "讨论进行中..." : "讨论已暂停"}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {isActive ? "讨论进行中..." : "讨论已暂停"}
+            </span>
+            <div className="ml-2">
+              <TypingIndicator
+                indicators={indicators}
+                getMemberName={getAgentInfo().getName}
+                getMemberAvatar={getAgentInfo().getAvatar}
+              />
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

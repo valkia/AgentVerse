@@ -8,19 +8,16 @@ import {
 import { reorganizeMessages } from "@/lib/discussion/message-utils";
 import { cn } from "@/lib/utils";
 import {
-  ITypingIndicator,
-  typingIndicatorService,
-} from "@/services/typing-indicator.service";
-import { AgentMessage, MessageWithResults } from "@/types/discussion";
+  AgentMessage,
+  MessageWithResults
+} from "@/types/discussion";
 import { ArrowDown } from "lucide-react";
 import {
   forwardRef,
-  useEffect,
   useImperativeHandle,
   useRef,
   useState,
 } from "react";
-import { TypingIndicator } from "./typing-indicator";
 
 interface MessageItemProps {
   message: MessageWithResults;
@@ -101,17 +98,7 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
       );
     };
 
-    const [indicators, setIndicators] = useState<Map<string, ITypingIndicator>>(
-      typingIndicatorService.getIndicators()
-    );
-
-    useEffect(() => {
-      // 订阅状态变化
-      return typingIndicatorService.onIndicatorsChange$.listen(setIndicators);
-    }, []);
-
     // 重组消息
-    console.log("[MessageList] messages:", messages);
     const reorganizedMessages = reorganizeMessages(messages);
 
     return (
@@ -133,11 +120,6 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
                     agentInfo={agentInfo}
                   />
                 ))}
-                <TypingIndicator
-                  indicators={indicators}
-                  getMemberName={agentInfo.getName}
-                  getMemberAvatar={agentInfo.getAvatar}
-                />
               </div>
             </div>
           </ScrollableLayout>

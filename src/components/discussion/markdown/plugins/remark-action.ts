@@ -117,7 +117,6 @@ function processActionContent(
 export function remarkAction(options: RemarkActionOptions = {}) {
   return (tree: MdastRoot) => {
     const actionResults = options.actionResults || {};
-    console.log('[remarkAction] Running with options:', { actionResults });
     
     visit(tree, 'paragraph', (node: Paragraph, index: number|undefined, parent?: Parent) => {
       if (!parent || typeof index !== 'number') return;

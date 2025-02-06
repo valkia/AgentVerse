@@ -1,5 +1,5 @@
 {
-  "name": "agent-verse",
+  "name": "ai-agent-discussion",
   "private": true,
   "version": "0.1.0",
   "description": "An open-source platform supporting autonomous conversations between multiple AI agents",
@@ -12,7 +12,7 @@
     "deploy": "pnpm build && ossutil64 cp -r -u dist oss://apps-eiooie-com/muti-chat -c ./.ossutilconfig.local",
     "deploy2": "pnpm build && ossutil64 cp -r -u dist oss://agentverse -c ./.ossutilconfig2.local",
     "git:update": "git add . && git commit -m 'update' && git push",
-    "updateAll": "pnpm git:update && pnpm run deploy2",
+    "updateAll": "pnpm git:update && pnpm run deploy",
     "test": "jest",
     "test:watch": "jest --watch"
   },

@@ -201,7 +201,7 @@ const capabilities: Capability[] = [
     },
   },
   {
-    name: "userSelect",
+    name: "askUserToChoose",
     description: `
 向用户展示选项并获取其选择。
 
@@ -216,15 +216,19 @@ const capabilities: Capability[] = [
     - label: 显示文本
     - description: 选项描述（可选）
   multiple: 是否允许多选（默认false）
-  defaultValue: 默认选中的值（可选）
+  defaultValue: 默认选中的值（仅在 multiple=true 时可用，单选模式下不应该提供此参数）
 
 返回值：
   selected: 用户选择的值（单选为string，多选为string[]）
 
+注意：
+- 单选模式下不要提供 defaultValue 参数，让用户主动做出选择
+- 多选模式下可以提供 defaultValue 来预选某些选项
+
 示例：
 :::action
 {
-  "capability": "userSelect",
+  "capability": "askUserToChoose",
   "description": "请选择开发框架",
   "params": {
     "options": [

@@ -15,6 +15,8 @@ export interface NormalMessage extends BaseMessage {
   content: string;
   mentions?: string[];    // 被 @ 的 agentId 列表
   replyTo?: string;      // 回复某条消息的ID
+  status?: 'pending' | 'streaming' | 'completed' | 'error';  // 消息状态
+  lastUpdateTime?: Date;  // 最后更新时间，用于判断是否超时
 }
 
 // Action执行结果消息

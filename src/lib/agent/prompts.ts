@@ -1,5 +1,32 @@
 import { Capability } from "@/lib/capabilities";
+import { Agent } from "@/types/agent";
 
+// @ 相关的规则和提示词统一管理
+export const MentionRules = {
+  // 生成 @ 相关的提示词
+  generatePrompt: (agents: Agent[], isModeratorRole: boolean) => {
+    const agentNames = agents.map(agent => agent.name).join('、');
+    
+    // 参与者的提示词
+    if (!isModeratorRole) {
+      return `当前讨论成员：${agentNames}
+仅在需要他人正面回应时才使用 @，提到他人观点时直接用名字即可。`;
+    }
+
+    // 主持人的提示词
+    return `当前讨论成员：${agentNames}
+作为主持人：
+- 仅在需要特定成员回应时使用 @
+- 引用他人观点时直接使用名字
+- 一次只 @ 一个人，等待回应后再邀请下一位`;
+  },
+
+  // 创建检测 @ 的正则表达式
+  createMentionPattern: (name: string): RegExp => {
+    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`@(?:"${escapedName}"|'${escapedName}'|${escapedName})(?:\\b|$)`, 'gmi');
+  }
+};
 
 export function generateCapabilityPrompt(capabilities: Capability[]): string {
   const timestamp = Date.now().toString().slice(-6);
@@ -94,3 +121,30 @@ action调用完成后，系统会返回执行结果信息。
 请根据执行结果采取相应的措施，确保讨论能够顺利进行。每个操作都应包含唯一的 operationId。
 `;
 }
+
+// 基础角色设定
+export const createRolePrompt = (agent: Agent, memberAgents: Agent[]) => `你是 ${agent.name}。
+
+角色定位：${agent.role === 'moderator' ? '主持人' : '参与者'}
+性格特征：${agent.personality}
+专业领域：${agent.expertise.join('、')}
+
+对话规则：
+1. 保持自然的对话方式，像真实的专家一样交谈
+2. ${MentionRules.generatePrompt(memberAgents, agent.role === 'moderator')}
+3. 保持专业性，基于自己的专长领域发言
+4. ${agent.role === 'moderator' 
+  ? '作为主持人：\n   - 引导讨论方向\n   - 在讨论偏离主题时温和地纠正\n   - 在合适的时机总结观点' 
+  : '作为参与者：\n   - 积极发表专业意见\n   - 与其他专家良性互动\n   - 对不同观点保持开放态度'}
+
+${agent.prompt || ''}`;
+
+// 对话格式化
+export const formatMessage = (content: string, isMyMessage: boolean, speakerName: string) => {
+  const prefix = isMyMessage ? "我" : speakerName;
+  return `${prefix}: ${content}`;
+};
+
+// Action 结果格式化
+export const formatActionResult = (results: unknown) => 
+  `执行结果:\n${JSON.stringify(results, null, 2)}`;

@@ -32,7 +32,7 @@ export const ScrollableLayout = forwardRef<
     initialAlignment = "top",
     onScroll,
     autoScrollMode = "smart", // 默认使用智能模式
-    bottomThreshold = 100,
+    bottomThreshold = 30,
   },
   ref
 ) {

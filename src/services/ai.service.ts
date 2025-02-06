@@ -12,6 +12,7 @@ import {
   StandardProvider
 } from "@/lib/ai-service";
 import { ProviderType } from "@/types/ai";
+import { Observable } from "rxjs";
 
 // 核心服务类
 export class AIService {
@@ -19,6 +20,10 @@ export class AIService {
 
   public chatCompletion(messages: ChatMessage[]): Promise<string> {
     return this.provider.generateCompletion(messages);
+  }
+
+  public streamChatCompletion(messages: ChatMessage[]): Observable<string> {
+    return this.provider.generateStreamCompletion(messages);
   }
 }
 

@@ -1,8 +1,8 @@
 # AgentVerse
 
-Spark Ideas Through AI Collaboration ✨
+A Universe of AI Agents, Unleashing Infinite Possibilities Through Collaboration ✨
 
-An open-source platform for multi-agent conversations, powered by leading AI models. Enable AIs to engage in autonomous discussions, brainstorming, and knowledge exploration.
+AgentVerse is an open-source AI agent ecosystem powered by leading AI models. It enables AI agents to engage in autonomous discussions, thought collisions, and knowledge exploration. Here, each agent can play a unique role, collectively creating wisdom that transcends individual capabilities.
 
 English | [简体中文](./README.md)
 
@@ -10,18 +10,24 @@ English | [简体中文](./README.md)
 
 ## 🚀 Online Demo
 
-Visit our online demo: [Demo](https://apps.eiooie.com/muti-chat/)
+Visit our online demo: [Demo](https://agent.dimstack.com)
 
 ## ✨ Features
 
+- 🌍 Complete Agent Ecosystem
+  - Multi-role Collaboration
+  - Autonomous Dialogue
+  - Scenario-based Applications
 - 🤖 Support for Multiple AI Providers
   - OpenAI
   - DeepSeek
   - Moonshot
   - Alibaba Cloud DashScope
   - Doubao
-- 💬 Autonomous conversations between agents
-- 🎯 Customizable discussion topics and participants
+- 💡 Rich Application Scenarios
+  - Professional Discussions
+  - Brainstorming
+  - Knowledge Exploration
 
 ## 💡 Use Cases
 
@@ -36,6 +42,10 @@ Visit our online demo: [Demo](https://apps.eiooie.com/muti-chat/)
 ### Learning Assistant
 - Create mentor and student roles
 - Explain concepts and answer questions
+
+### Creative Inspiration
+- Multi-perspective thinking
+- Collective wisdom exploration
 
 ## 🛠 Tech Stack
 
@@ -81,6 +91,11 @@ pnpm dev
 Near-term:
 - [ ] Theme switching (light/dark)
 - [ ] Mobile responsiveness
+
+Future:
+- [ ] Chat history and export
+- [ ] Role template marketplace
+- [ ] Custom prompt templates
 
 ## 🤝 Contributing
 

@@ -16,7 +16,7 @@ export function UserSelectAction({
   result,
 }: UserSelectActionProps) {
   const isPending = !status || status === "pending" || status === "running";
-  const selectedValue = result?.result?.selected;
+  const defaultValue = result?.result?.selected ?? (params.multiple ? params.defaultValue : undefined);
 
   const handleSelect = (selected: string | string[]) => {
     if (!isPending) return;
@@ -39,7 +39,7 @@ export function UserSelectAction({
           <SelectDisplay
             options={params.options || []}
             multiple={!!params.multiple}
-            defaultValue={selectedValue || params.defaultValue}
+            defaultValue={defaultValue}
             disabled={!isPending}
             onSelect={handleSelect}
           />

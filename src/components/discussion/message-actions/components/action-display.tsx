@@ -8,7 +8,7 @@ export function ActionDisplay(props: ActionDisplayProps) {
 
   // 根据capability类型渲染不同的动作组件
   if (
-    props.capability === "userSelect" &&
+    props.capability === "askUserToChoose" &&
     Array.isArray(props.params.options)
   ) {
     return <UserSelectAction {...(props as UserSelectActionProps)} />;
