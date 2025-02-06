@@ -82,11 +82,6 @@ Near-term:
 - [ ] Theme switching (light/dark)
 - [ ] Mobile responsiveness
 
-Future:
-- [ ] Chat history and export
-- [ ] Role template marketplace
-- [ ] Custom prompt templates
-
 ## 🤝 Contributing
 
 1. Fork the repository
