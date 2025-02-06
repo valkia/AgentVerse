@@ -1,9 +1,12 @@
-import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
-import tsconfigPaths from "vite-tsconfig-paths"
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+import minimist from "minimist";
+
+const args = minimist(process.argv.slice(2));
 
 export default defineConfig({
-  base: "/muti-chat/",
+  base: args["baseUri"] || "/",
   plugins: [
     react({
       babel: {
@@ -14,5 +17,5 @@ export default defineConfig({
       },
     }),
     tsconfigPaths(),
-  ]
+  ],
 });
