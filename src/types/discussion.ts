@@ -1,4 +1,4 @@
-import { MarkdownActionResults } from "@/components/discussion/markdown";
+import { MarkdownActionResults } from "@/components/chat/markdown";
 
 // 基础消息类型
 export interface BaseMessage {

@@ -9,7 +9,7 @@ export function useTheme() {
   }, []);
 
   const rootClassName = useMemo(
-    () => cn("h-screen flex flex-col overflow-hidden", isDarkMode ? "dark bg-gray-900" : "bg-gray-50"),
+    () => cn("h-screen w-screen flex flex-col overflow-hidden", isDarkMode ? "dark bg-gray-900" : "bg-gray-50"),
     [isDarkMode]
   );
 

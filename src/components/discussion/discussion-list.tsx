@@ -199,7 +199,7 @@ export function DiscussionList({
     <div className={cn("flex flex-col flex-1 overflow-hidden h-full", className)}>
       <header
         className={cn(
-          "flex-none flex justify-between items-center mb-3 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 z-10 py-2",
+          "flex-none flex justify-between items-center mb-3 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 z-10 py-2 px-4 pt-4",
           headerClassName
         )}
       >
@@ -222,7 +222,7 @@ export function DiscussionList({
 
       <div
         className={cn(
-          "flex-1 min-h-0 overflow-y-auto",
+          "flex-1 min-h-0 overflow-y-auto p-4 pt-0",
           listClassName
         )}
       >

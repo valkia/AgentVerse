@@ -13,6 +13,7 @@ import { ClearMessagesButton } from "./clear-messages-button";
 import { ITypingIndicator, typingIndicatorService } from "@/services/typing-indicator.service";
 import { TypingIndicator } from "../../chat/typing-indicator";
 import { agentListResource } from "@/resources";
+import { MemberToggleButton } from "../member/member-toggle-button";
 
 type ModerationStyle = "strict" | "relaxed";
 
@@ -93,11 +94,13 @@ interface DiscussionControllerProps {
     type?: AgentMessage["type"];
     replyTo?: string;
   }) => Promise<AgentMessage | undefined>;
+  onToggleMembers?: () => void;
 }
 
 export function DiscussionController({
   status,
   onSendMessage,
+  onToggleMembers
 }: DiscussionControllerProps) {
   const [showSettings, setShowSettings] = useState(false);
   const { data: settings, set: setSettings } = useProxyBeanState(
@@ -158,7 +161,7 @@ export function DiscussionController({
 
   return (
     <div className="rounded-lg border bg-card p-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Button
             onClick={() => {
@@ -180,7 +183,7 @@ export function DiscussionController({
             )}
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
               {isActive ? "讨论进行中..." : "讨论已暂停"}
             </span>
@@ -193,6 +196,8 @@ export function DiscussionController({
             </div>
           </div>
         </div>
+
+        <div className="flex-1" />
 
         <div className="flex items-center gap-2">
           <ClearMessagesButton 
@@ -213,6 +218,11 @@ export function DiscussionController({
           >
             <Settings2 className="w-5 h-5" />
           </Button>
+
+          <MemberToggleButton 
+            onClick={onToggleMembers}
+            memberCount={members.length}
+          />
         </div>
       </div>
 

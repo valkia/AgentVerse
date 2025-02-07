@@ -1,24 +1,32 @@
+import { AddAgentDialog } from "@/components/agent/add-agent-dialog";
 import { ChatArea } from "@/components/chat/chat-area";
 import { DiscussionController } from "@/components/discussion/control/discussion-controller";
 import { DiscussionList } from "@/components/discussion/discussion-list";
 import { MemberList } from "@/components/discussion/member/member-list";
+import { MobileMemberDrawer } from "@/components/discussion/member/mobile-member-drawer";
 import { Header } from "@/components/layout/header";
+import { MobileHeader } from "@/components/layout/mobile-header";
+import { ResponsiveContainer } from "@/components/layout/responsive-container";
 import { useAgents } from "@/hooks/useAgents";
+import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 import { useMessages } from "@/hooks/useMessages";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { discussionControlService } from "@/services/discussion-control.service";
 import { Discussion, NormalMessage } from "@/types/discussion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useBeanState } from "rx-nested-bean";
 import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
-import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 
 export function App() {
   const { isDarkMode, toggleDarkMode, rootClassName } = useTheme();
   const { getAgentName, getAgentAvatar } = useAgents();
   const { messages, addMessage } = useMessages();
   const { members } = useDiscussionMembers();
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [showMembers, setShowMembers] = useState(true);
+  const [showMobileMembers, setShowMobileMembers] = useState(false);
+  const [showMobileAgentsDialog, setShowMobileAgentsDialog] = useState(false);
   const { data: currentDiscussionId } = useBeanState(
     discussionControlService.currentDiscussionIdBean
   );
@@ -31,12 +39,20 @@ export function App() {
     setIsPaused(status === "active");
   };
 
+  const handleToggleMembers = () => {
+    if (window.innerWidth >= 1024) {
+      setShowMembers(!showMembers);
+    } else {
+      setShowMobileMembers(true);
+    }
+  };
+
   // 处理第一条消息，设置为主题
   const handleMessage = async (content: string, agentId: string) => {
     const agentMessage = await addMessage({
       content,
       agentId,
-      type: "text"
+      type: "text",
     });
     // 如果是第一条消息，设置为主题
     if (messages.length === 0) {
@@ -52,47 +68,40 @@ export function App() {
     discussionControlService.setMessages(messages);
   }, [messages]);
 
-  return (
-    <div
-      className={cn(rootClassName, "flex flex-col h-screen w-screen")}
-      data-testid="app-root"
-    >
-      <Header
+  // 侧边栏内容
+  const sidebarContent = (
+    <div className="h-full bg-card">
+        <DiscussionList />
+    </div>
+  );
+
+  // 主要内容
+  const mainContent = (
+    <div className="flex flex-col h-full">
+      <MobileHeader
+        onToggleSidebar={() => setShowMobileSidebar(true)}
         isDarkMode={isDarkMode}
-        toggleDarkMode={toggleDarkMode}
-        status={status}
+        onThemeToggle={toggleDarkMode}
+        onShowAgentManagementPanel={() => setShowMobileAgentsDialog(true)}
+        className="lg:hidden"
       />
 
-      <main className="flex-1 flex min-h-0" data-testid="app-main">
-        {/* 左侧会话列表 */}
-        <div
-          className="w-80 flex-none border-r border-border bg-card"
-          data-testid="discussion-list-container"
-        >
-          <div className="p-4 h-full">
-            <DiscussionList />
-          </div>
-        </div>
-
-        {/* 中间和右侧区域 */}
+      <div className="flex-1 flex min-h-0">
         {members.length === 0 ? (
           <div className="flex-1">
             <DiscussionSetupPage />
           </div>
         ) : (
           <>
-            {/* 中间讨论区 */}
-            <div
-              className="flex-1 flex flex-col min-w-0"
-              data-testid="discussion-area"
-            >
-              <div
-                className="flex-none p-4 border-b"
-                data-testid="discussion-controller"
-              >
-                <DiscussionController status={status} onSendMessage={addMessage} />
+            <div className="flex-1 flex flex-col min-w-0">
+              <div className="flex-none p-4 border-b">
+                <DiscussionController
+                  status={status}
+                  onSendMessage={addMessage}
+                  onToggleMembers={handleToggleMembers}
+                />
               </div>
-              <div className="flex-1 min-h-0" data-testid="chat-area">
+              <div className="flex-1 min-h-0">
                 <ChatArea
                   key={currentDiscussionId}
                   messages={messages}
@@ -104,14 +113,16 @@ export function App() {
                       handleStatusChange("active");
                     }
                   }}
+                  className="h-full"
                 />
               </div>
             </div>
 
-            {/* 右侧成员列表 */}
             <div
-              className="w-80 flex-none border-l border-border bg-card"
-              data-testid="member-list-container"
+              className={cn(
+                "w-80 flex-none border-l border-border bg-card hidden lg:block",
+                !showMembers && "lg:hidden"
+              )}
             >
               <div className="p-4 h-full">
                 <MemberList />
@@ -119,7 +130,38 @@ export function App() {
             </div>
           </>
         )}
-      </main>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={cn(rootClassName)} data-testid="app-root">
+      {/* PC端顶部Header */}
+      <Header
+        isDarkMode={isDarkMode}
+        toggleDarkMode={toggleDarkMode}
+        status={status}
+        className="hidden lg:flex"
+      />
+
+      <div className="flex-1 min-h-0">
+        <ResponsiveContainer
+          sidebarContent={sidebarContent}
+          mainContent={mainContent}
+          showMobileSidebar={showMobileSidebar}
+          onMobileSidebarChange={setShowMobileSidebar}
+        />
+      </div>
+
+      {/* 移动端成员管理抽屉 */}
+      <MobileMemberDrawer
+        open={showMobileMembers}
+        onOpenChange={setShowMobileMembers}
+      />
+      <AddAgentDialog
+        isOpen={showMobileAgentsDialog}
+        onOpenChange={setShowMobileAgentsDialog}
+      />
     </div>
   );
 }
