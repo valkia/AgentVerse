@@ -52,13 +52,7 @@ function processActionContent(
         throw new Error("Missing required field: description");
       }
       const result = actionResults[parsed.operationId];
-      
-      console.log('[remarkAction] Processing action:', { 
-        parsed, 
-        actionResults,
-        operationId: parsed.operationId,
-        result
-      });
+
 
       const actionData: ActionData = {
         operationId: parsed.operationId,

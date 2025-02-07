@@ -10,7 +10,10 @@ import { SettingSelect } from "../settings/setting-select";
 import { SettingSlider } from "../settings/setting-slider";
 import { SettingSwitch } from "../settings/setting-switch";
 import { ClearMessagesButton } from "./clear-messages-button";
-import { ITypingIndicator, typingIndicatorService } from "@/services/typing-indicator.service";
+import {
+  ITypingIndicator,
+  typingIndicatorService,
+} from "@/services/typing-indicator.service";
 import { TypingIndicator } from "../../chat/typing-indicator";
 import { agentListResource } from "@/resources";
 import { MemberToggleButton } from "../member/member-toggle-button";
@@ -40,10 +43,8 @@ function SettingsPanel({ settings, onSettingsChange }: SettingsPanelProps) {
 
   return (
     <div className="space-y-4 rounded-lg border bg-card/50 p-4">
-      <div className="text-sm font-medium text-muted-foreground">
-        讨论设置
-      </div>
-      
+      <div className="text-sm font-medium text-muted-foreground">讨论设置</div>
+
       <SettingSlider
         label="回复间隔"
         description="每个Agent之间的回复间隔时间"
@@ -100,7 +101,7 @@ interface DiscussionControllerProps {
 export function DiscussionController({
   status,
   onSendMessage,
-  onToggleMembers
+  onToggleMembers,
 }: DiscussionControllerProps) {
   const [showSettings, setShowSettings] = useState(false);
   const { data: settings, set: setSettings } = useProxyBeanState(
@@ -111,6 +112,7 @@ export function DiscussionController({
   const [indicators, setIndicators] = useState<Map<string, ITypingIndicator>>(
     typingIndicatorService.getIndicators()
   );
+  const [messageCount, setMessageCount] = useState(0);
 
   useEffect(() => {
     discussionControlService.setMembers(members);
@@ -118,7 +120,7 @@ export function DiscussionController({
 
   useEffect(() => {
     if (status === "active" && discussionControlService.getTopic()) {
-      const activeMembers = members.filter(m => m.isAutoReply);
+      const activeMembers = members.filter((m) => m.isAutoReply);
       if (activeMembers.length > 0) {
         discussionControlService.run();
       }
@@ -127,11 +129,11 @@ export function DiscussionController({
     }
   }, [status, members]);
 
-  useEffect(()=>{
-    return ()=>{
+  useEffect(() => {
+    return () => {
       discussionControlService.pause();
-    }
-  },[])
+    };
+  }, []);
 
   useEffect(() => {
     return discussionControlService.onRequestSendMessage$.listen((message) => {
@@ -147,15 +149,25 @@ export function DiscussionController({
     return typingIndicatorService.onIndicatorsChange$.listen(setIndicators);
   }, []);
 
+  useEffect(() => {
+    const sub =
+      discussionControlService.env.speakScheduler.messageCounterBean.$.subscribe(
+        (count) => setMessageCount(count)
+      );
+    return () => {
+      sub.unsubscribe();
+    };
+  }, []);
+
   const isActive = status === "active";
 
   const getAgentInfo = () => {
     const agents = agentListResource.read().data;
     return {
-      getName: (agentId: string) => 
-        agents.find(agent => agent.id === agentId)?.name || agentId,
-      getAvatar: (agentId: string) => 
-        agents.find(agent => agent.id === agentId)?.avatar || "",
+      getName: (agentId: string) =>
+        agents.find((agent) => agent.id === agentId)?.name || agentId,
+      getAvatar: (agentId: string) =>
+        agents.find((agent) => agent.id === agentId)?.avatar || "",
     };
   };
 
@@ -186,6 +198,7 @@ export function DiscussionController({
           <div className="hidden md:flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
               {isActive ? "讨论进行中..." : "讨论已暂停"}
+              {isActive && ` (本轮消息: ${messageCount})`}
             </span>
             <div className="ml-2">
               <TypingIndicator
@@ -200,12 +213,12 @@ export function DiscussionController({
         <div className="flex-1" />
 
         <div className="flex items-center gap-2">
-          <ClearMessagesButton 
-            size="icon" 
+          <ClearMessagesButton
+            size="icon"
             className="shrink-0"
             variant="ghost"
           />
-          
+
           <Button
             variant="ghost"
             size="icon"
@@ -219,21 +232,20 @@ export function DiscussionController({
             <Settings2 className="w-5 h-5" />
           </Button>
 
-          <MemberToggleButton 
+          <MemberToggleButton
             onClick={onToggleMembers}
             memberCount={members.length}
           />
         </div>
       </div>
 
-      <div className={cn(
-        "overflow-hidden transition-all duration-200 ease-in-out",
-        showSettings ? "mt-3 max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-      )}>
-        <SettingsPanel
-          settings={settings}
-          onSettingsChange={setSettings}
-        />
+      <div
+        className={cn(
+          "overflow-hidden transition-all duration-200 ease-in-out",
+          showSettings ? "mt-3 max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+        )}
+      >
+        <SettingsPanel settings={settings} onSettingsChange={setSettings} />
       </div>
     </div>
   );

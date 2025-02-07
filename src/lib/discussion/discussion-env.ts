@@ -17,7 +17,7 @@ export const DiscussionKeys = {
 };
 
 export class DiscussionEnvBus extends EnvironmentBus {
-  private speakScheduler: SpeakScheduler;
+  speakScheduler: SpeakScheduler;
 
   constructor(speakRequestTimeout?: number) {
     super();

@@ -6,9 +6,14 @@ import {
   DiscussionKeys,
 } from "@/lib/discussion/discussion-env";
 import { RxEvent } from "@/lib/rx-event";
-import { agentListResource, discussionMembersResource } from "@/resources";
+import {
+  agentListResource,
+  discussionMembersResource,
+  messagesResource,
+} from "@/resources";
 import { discussionCapabilitiesResource } from "@/resources/discussion-capabilities.resource";
 import { discussionMemberService } from "@/services/discussion-member.service";
+import { messageService } from "@/services/message.service";
 import { typingIndicatorService } from "@/services/typing-indicator.service";
 import { AgentMessage, NormalMessage } from "@/types/discussion";
 import { DiscussionMember } from "@/types/discussion-member";
@@ -70,12 +75,12 @@ export class DiscussionControlService {
 
   private timeoutManager = new TimeoutManager();
   private agents: Map<string, BaseAgent> = new Map();
-  private env: DiscussionEnvBus;
+  env: DiscussionEnvBus;
 
   // 生命周期管理
-  private serviceCleanupHandlers: Array<() => void> = [];  // 服务级清理
+  private serviceCleanupHandlers: Array<() => void> = []; // 服务级清理
   private discussionCleanupHandlers: Array<() => void> = []; // 讨论级清理
-  private runtimeCleanupHandlers: Array<() => void> = [];   // 运行时清理
+  private runtimeCleanupHandlers: Array<() => void> = []; // 运行时清理
 
   constructor() {
     this.env = new DiscussionEnvBus();
@@ -172,6 +177,10 @@ export class DiscussionControlService {
     return this.topicBean.get();
   }
 
+  getRoundMessageCount() {
+    return this.env.speakScheduler.messageCounterBean.get();
+  }
+
   onMessage(message: AgentMessage) {
     this.env.eventBus.emit(DiscussionKeys.Events.message, message);
   }
@@ -195,6 +204,28 @@ export class DiscussionControlService {
     );
     this.discussionCleanupHandlers.push(thinkingOff);
 
+    // 添加消息限制监听
+    const scheduler = this.env.speakScheduler;
+    const limitReachedOff = scheduler.onLimitReached$.listen(() => {
+      // 添加系统消息
+      const warningMessage: NormalMessage = {
+        agentId: "system",
+        content: `由于本轮消息数量达到限制（${scheduler.getRoundLimit()}条），讨论已自动暂停。这是为了避免自动对话消耗过多资源，您可手动重启对话。此为临时解决方案，后续会努力提供更合理的自动终止策略。`,
+        type: "text",
+        id: `system-${Date.now()}`,
+        discussionId: this.getCurrentDiscussionId()!,
+        timestamp: new Date(),
+      };
+      messageService.addMessage(
+        this.currentDiscussionIdBean.get()!,
+        warningMessage
+      );
+      messagesResource.current.reload();
+      // 暂停讨论
+      this.pause();
+    });
+
+    this.discussionCleanupHandlers.push(limitReachedOff);
     return this.selectParticipants(topic);
   }
 
@@ -202,28 +233,32 @@ export class DiscussionControlService {
   pause() {
     // 1. 设置暂停状态
     this.isPausedBean.set(true);
-    
+
     // 2. 暂停所有 agents
     for (const agent of this.agents.values()) {
       agent.pause();
     }
-    
+
     // 3. 发送讨论暂停事件
     this.env.eventBus.emit(DiscussionKeys.Events.discussionPause, null);
-    
+
     // 4. 清理运行时资源
     this.cleanupRuntime();
+
+    // 重置计数器
+    const scheduler = this.env.speakScheduler;
+    scheduler.resetCounter();
   }
 
   resume() {
     // 1. 设置恢复状态
     this.isPausedBean.set(false);
-    
+
     // 2. 恢复所有 agents
     for (const agent of this.agents.values()) {
       agent.resume();
     }
-    
+
     // 3. 发送讨论恢复事件
     this.env.eventBus.emit(DiscussionKeys.Events.discussionResume, null);
   }
@@ -232,20 +267,20 @@ export class DiscussionControlService {
   private cleanupRuntime() {
     // 清理运行时资源（定时器等）
     this.timeoutManager.clearAll();
-    this.runtimeCleanupHandlers.forEach(cleanup => cleanup());
+    this.runtimeCleanupHandlers.forEach((cleanup) => cleanup());
     this.runtimeCleanupHandlers = [];
   }
 
   private cleanupDiscussion() {
     // 清理讨论级资源
-    this.discussionCleanupHandlers.forEach(cleanup => cleanup());
+    this.discussionCleanupHandlers.forEach((cleanup) => cleanup());
     this.discussionCleanupHandlers = [];
     this.cleanupRuntime(); // 同时清理运行时资源
   }
 
   private cleanupService() {
     // 清理服务级资源
-    this.serviceCleanupHandlers.forEach(cleanup => cleanup());
+    this.serviceCleanupHandlers.forEach((cleanup) => cleanup());
     this.serviceCleanupHandlers = [];
     this.cleanupDiscussion(); // 同时清理讨论级资源
   }
@@ -284,11 +319,14 @@ export class DiscussionControlService {
   private async selectParticipants(topic: string): Promise<string[]> {
     const currentMembers = this.membersBean.get();
     if (currentMembers.length > 0) {
-      return currentMembers.map(member => member.agentId);
+      return currentMembers.map((member) => member.agentId);
     }
 
     const availableAgents = agentListResource.read().data;
-    const selectedIds = await agentSelector.selectAgents(topic, availableAgents);
+    const selectedIds = await agentSelector.selectAgents(
+      topic,
+      availableAgents
+    );
     if (selectedIds.length === 0) {
       throw new DiscussionError(
         DiscussionErrorType.NO_PARTICIPANTS,
@@ -306,11 +344,11 @@ export class DiscussionControlService {
 
     // 1. 获取当前已存在的成员
     const existingMembers = this.membersBean.get();
-    const existingAgentIds = new Set(existingMembers.map(m => m.agentId));
+    const existingAgentIds = new Set(existingMembers.map((m) => m.agentId));
 
     // 2. 过滤出需要新增的成员
-    const newAgentIds = agentIds.filter(id => !existingAgentIds.has(id));
-    
+    const newAgentIds = agentIds.filter((id) => !existingAgentIds.has(id));
+
     if (newAgentIds.length === 0) {
       console.log("[DiscussionControl] No new members to add");
       return;
@@ -363,13 +401,13 @@ export class DiscussionControlService {
     const messages = this.messagesBean.get();
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
-      
+
       // 1. 恢复讨论级资源
       await this.initializeDiscussion(this.topicBean.get());
-      
+
       // 2. 恢复运行时状态
       this.resume();
-      
+
       // 3. 重放最后一条消息
       this.env.eventBus.emit(DiscussionKeys.Events.message, lastMessage);
     }
