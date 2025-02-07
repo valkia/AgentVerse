@@ -11,11 +11,14 @@ import { discussionControlService } from "@/services/discussion-control.service"
 import { Discussion, NormalMessage } from "@/types/discussion";
 import { useEffect } from "react";
 import { useBeanState } from "rx-nested-bean";
+import { DiscussionSetupPage } from "./components/discussion/discussion-setup-page";
+import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 
 export function App() {
   const { isDarkMode, toggleDarkMode, rootClassName } = useTheme();
   const { getAgentName, getAgentAvatar } = useAgents();
   const { messages, addMessage } = useMessages();
+  const { members } = useDiscussionMembers();
   const { data: currentDiscussionId } = useBeanState(
     discussionControlService.currentDiscussionIdBean
   );
@@ -30,7 +33,11 @@ export function App() {
 
   // 处理第一条消息，设置为主题
   const handleMessage = async (content: string, agentId: string) => {
-    const agentMessage = await addMessage(content, agentId);
+    const agentMessage = await addMessage({
+      content,
+      agentId,
+      type: "text"
+    });
     // 如果是第一条消息，设置为主题
     if (messages.length === 0) {
       discussionControlService.setTopic(content);
@@ -67,42 +74,51 @@ export function App() {
           </div>
         </div>
 
-        {/* 中间讨论区 */}
-        <div
-          className="flex-1 flex flex-col min-w-0"
-          data-testid="discussion-area"
-        >
-          <div
-            className="flex-none p-4 border-b"
-            data-testid="discussion-controller"
-          >
-            <DiscussionController status={status} onSendMessage={addMessage} />
+        {/* 中间和右侧区域 */}
+        {members.length === 0 ? (
+          <div className="flex-1">
+            <DiscussionSetupPage />
           </div>
-          <div className="flex-1 min-h-0" data-testid="chat-area">
-            <ChatArea
-              key={currentDiscussionId}
-              messages={messages}
-              onSendMessage={handleMessage}
-              getAgentName={getAgentName}
-              getAgentAvatar={getAgentAvatar}
-              onStartDiscussion={() => {
-                if (status === "paused") {
-                  handleStatusChange("active");
-                }
-              }}
-            />
-          </div>
-        </div>
+        ) : (
+          <>
+            {/* 中间讨论区 */}
+            <div
+              className="flex-1 flex flex-col min-w-0"
+              data-testid="discussion-area"
+            >
+              <div
+                className="flex-none p-4 border-b"
+                data-testid="discussion-controller"
+              >
+                <DiscussionController status={status} onSendMessage={addMessage} />
+              </div>
+              <div className="flex-1 min-h-0" data-testid="chat-area">
+                <ChatArea
+                  key={currentDiscussionId}
+                  messages={messages}
+                  onSendMessage={handleMessage}
+                  getAgentName={getAgentName}
+                  getAgentAvatar={getAgentAvatar}
+                  onStartDiscussion={() => {
+                    if (status === "paused") {
+                      handleStatusChange("active");
+                    }
+                  }}
+                />
+              </div>
+            </div>
 
-        {/* 右侧成员列表 */}
-        <div
-          className="w-80 flex-none border-l border-border bg-card"
-          data-testid="member-list-container"
-        >
-          <div className="p-4 h-full">
-            <MemberList />
-          </div>
-        </div>
+            {/* 右侧成员列表 */}
+            <div
+              className="w-80 flex-none border-l border-border bg-card"
+              data-testid="member-list-container"
+            >
+              <div className="p-4 h-full">
+                <MemberList />
+              </div>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );

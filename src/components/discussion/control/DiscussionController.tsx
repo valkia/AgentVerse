@@ -6,12 +6,12 @@ import { DiscussionSettings, AgentMessage } from "@/types/discussion";
 import { PauseCircle, PlayCircle, Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useProxyBeanState } from "rx-nested-bean";
-import { SettingSelect } from "./setting-select";
-import { SettingSlider } from "./setting-slider";
-import { SettingSwitch } from "./setting-switch";
-import { ClearMessagesButton } from "./clear-messages-button";
+import { SettingSelect } from "../settings/components/SettingSelect";
+import { SettingSlider } from "../settings/components/SettingSlider";
+import { SettingSwitch } from "../settings/components/SettingSwitch";
+import { ClearMessagesButton } from "./components/ClearMessagesButton";
 import { ITypingIndicator, typingIndicatorService } from "@/services/typing-indicator.service";
-import { TypingIndicator } from "../chat/typing-indicator";
+import { TypingIndicator } from "@/components/chat/typing-indicator";
 import { agentListResource } from "@/resources";
 
 type ModerationStyle = "strict" | "relaxed";
@@ -227,4 +227,4 @@ export function DiscussionController({
       </div>
     </div>
   );
-}
+} 

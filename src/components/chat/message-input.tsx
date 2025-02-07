@@ -37,7 +37,7 @@ export function MessageInput({
 
     try {
       setIsLoading(true);
-      await onSendMessage(input.trim(), selectedMemberId);
+      await onSendMessage(input.trim(), selectedMemberId === 'self' ? 'user' : selectedAgent?.id || '');
       setInput("");
       inputRef.current?.focus();
     } finally {

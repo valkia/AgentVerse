@@ -1,6 +1,7 @@
 import { MessageMarkdownContent } from "@/components/discussion/message-actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { QuickMemberSelector } from "@/components/discussion/quick-member-selector";
 import {
   ScrollableLayout,
   ScrollableLayoutRef,
@@ -18,6 +19,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 
 interface MessageItemProps {
   message: MessageWithResults;
@@ -84,6 +86,7 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
     },
     ref
   ) {
+    const { members } = useDiscussionMembers();
     const scrollableLayoutRef = useRef<ScrollableLayoutRef>(null);
     const [showScrollButton, setShowScrollButton] = useState(false);
 
@@ -97,6 +100,48 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
         maxScroll > 0 && distanceToBottom > scrollButtonThreshold
       );
     };
+
+    // 如果没有成员，显示引导页面
+    if (members.length === 0) {
+      return (
+        <div className="h-full flex items-center justify-center">
+          <div className="max-w-2xl w-full p-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-semibold tracking-tight">开始一场新的讨论</h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                选择合适的成员来启动讨论
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {/* 快速选择区域 */}
+              <div>
+                <h3 className="text-sm font-medium mb-3">推荐组合</h3>
+                <QuickMemberSelector />
+              </div>
+
+              {/* 或者分割线 */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    或者
+                  </span>
+                </div>
+              </div>
+
+              {/* 手动选择区域 */}
+              <div>
+                <h3 className="text-sm font-medium mb-3">自定义组合</h3>
+                {/* TODO: 添加自定义成员选择器 */}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     // 重组消息
     const reorganizedMessages = reorganizeMessages(messages);

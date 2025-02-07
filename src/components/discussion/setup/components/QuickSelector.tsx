@@ -7,15 +7,15 @@ import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
-interface QuickMemberSelectorProps {
+interface QuickSelectorProps {
   onSelect?: () => void;
   onMembersChange?: (members: string[]) => void;
 }
 
-export function QuickMemberSelector({ 
+export function QuickSelector({ 
   onSelect,
   onMembersChange
-}: QuickMemberSelectorProps) {
+}: QuickSelectorProps) {
   const { agents } = useAgents();
   const { addMembers } = useDiscussionMembers();
   const { toast } = useToast();

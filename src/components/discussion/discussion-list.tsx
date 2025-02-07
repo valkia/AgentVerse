@@ -187,9 +187,12 @@ export function DiscussionList({
     deleteDiscussion
   } = useDiscussions();
 
-  const handleCreateDiscussion = () => {
+  const handleCreateDiscussion = async () => {
     if (agents.length === 0) return;
-    createDiscussion("新会话");
+    const discussion = await createDiscussion("新的讨论");
+    if (discussion) {
+      selectDiscussion(discussion.id);
+    }
   };
 
   return (

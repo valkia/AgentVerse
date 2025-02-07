@@ -10,3 +10,15 @@ export interface Agent {
   responseStyle: string;
 }
 
+export interface CombinationParticipant {
+  name: string;
+  description?: string;
+}
+
+export interface AgentCombination {
+  name: string;
+  description: string;
+  moderator: CombinationParticipant;
+  participants: CombinationParticipant[];
+}
+

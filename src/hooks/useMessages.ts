@@ -18,11 +18,17 @@ export function useMessages() {
   const withOptimisticUpdate = useOptimisticUpdate(resourceState);
 
   const addMessage = useMemoizedFn(
-    async (
-      content: string,
-      agentId: string,
-      type: AgentMessage["type"] = "text"
-    ) => {
+    async ({
+      content,
+      agentId,
+      type = "text",
+      replyTo,
+    }: {
+      content: string;
+      agentId: string;
+      type?: AgentMessage["type"];
+      replyTo?: string;
+    }) => {
       if (!currentDiscussionId) return;
 
       const tempId = nanoid();
@@ -37,6 +43,7 @@ export function useMessages() {
             content,
             agentId,
             type,
+            replyTo,
             timestamp,
             discussionId: currentDiscussionId,
           } as NormalMessage,
@@ -47,6 +54,7 @@ export function useMessages() {
             content,
             agentId,
             type,
+            replyTo,
             timestamp,
           } as Omit<NormalMessage, "id" | "discussionId">)
       );
