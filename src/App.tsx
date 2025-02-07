@@ -17,6 +17,7 @@ import { Discussion, NormalMessage } from "@/types/discussion";
 import { useEffect, useState } from "react";
 import { useBeanState } from "rx-nested-bean";
 import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
+import { SettingsDialog } from "@/components/settings/settings-dialog";
 
 export function App() {
   const { isDarkMode, toggleDarkMode, rootClassName } = useTheme();
@@ -27,6 +28,7 @@ export function App() {
   const [showMembers, setShowMembers] = useState(true);
   const [showMobileMembers, setShowMobileMembers] = useState(false);
   const [showMobileAgentsDialog, setShowMobileAgentsDialog] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const { data: currentDiscussionId } = useBeanState(
     discussionControlService.currentDiscussionIdBean
   );
@@ -83,6 +85,7 @@ export function App() {
         isDarkMode={isDarkMode}
         onThemeToggle={toggleDarkMode}
         onShowAgentManagementPanel={() => setShowMobileAgentsDialog(true)}
+        onShowSettings={() => setShowSettings(true)}
         className="lg:hidden"
       />
 
@@ -161,6 +164,10 @@ export function App() {
       <AddAgentDialog
         isOpen={showMobileAgentsDialog}
         onOpenChange={setShowMobileAgentsDialog}
+      />
+      <SettingsDialog
+        open={showSettings}
+        onOpenChange={setShowSettings}
       />
     </div>
   );

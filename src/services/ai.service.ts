@@ -1,22 +1,25 @@
 import {
   AI_PROVIDER_CONFIG,
-  AI_PROVIDER_TYPE,
-  AI_PROXY_URL,
-  AI_USE_PROXY,
+  BasicAIConfig
 } from "@/config/ai";
 import {
+  BaseConfig,
   ChatMessage,
   DirectAPIAdapter,
   LLMProvider,
   ProxyAPIAdapter,
   StandardProvider
 } from "@/lib/ai-service";
-import { ProviderType } from "@/types/ai";
+import { SupportedAIProvider } from "@/types/ai";
 import { Observable } from "rxjs";
 
 // 核心服务类
 export class AIService {
   constructor(private readonly provider: LLMProvider) {}
+
+  configure(config: BaseConfig) {
+    this.provider.configure(config);
+  }
 
   public chatCompletion(messages: ChatMessage[]): Promise<string> {
     return this.provider.generateCompletion(messages);
@@ -29,9 +32,9 @@ export class AIService {
 
 // 工厂函数
 export function createAIService(): AIService {
-  const useProxy = AI_USE_PROXY;
-  const proxyUrl = AI_PROXY_URL;
-  const providerType = AI_PROVIDER_TYPE as ProviderType;
+  const useProxy = BasicAIConfig.AI_USE_PROXY;
+  const proxyUrl = BasicAIConfig.AI_PROXY_URL;
+  const providerType = BasicAIConfig.AI_PROVIDER_NAME as SupportedAIProvider;
   const providerConfig = AI_PROVIDER_CONFIG[providerType];
 
   const adapter = useProxy

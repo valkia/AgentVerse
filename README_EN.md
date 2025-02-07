@@ -91,19 +91,9 @@ pnpm dev
 Near-term:
 - [ ] Theme switching (light/dark)
 - [ ] Mobile responsiveness
-
-Future:
-- [ ] Chat history and export
-- [ ] Role template marketplace
-- [ ] Custom prompt templates
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push branch (`git push origin feature/AmazingFeature`)
-5. Submit Pull Request
+- [ ] Add auto termination mechanism
+- [ ] Support custom large model API_KEY
+- [ ] Multi-language support
 
 ## 📄 License
 

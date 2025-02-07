@@ -7,4 +7,15 @@ export const DEFAULT_SETTINGS: DiscussionSettings = {
   moderationStyle: "relaxed",
   focusTopics: [],
   allowConflict: true,
-} as const; 
+} as const;
+
+export const SETTING_KYES = {
+  AI: {
+    PROVIDER: {
+      API_KEY: "ai.provider.apiKey",
+      API_URL: "ai.provider.apiUrl",
+      MODEL: "ai.provider.model",
+      ID: "ai.provider.id",
+    },
+  },
+};

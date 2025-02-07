@@ -1,4 +1,5 @@
 import { AddAgentDialog } from "@/components/agent/add-agent-dialog";
+import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Moon, Search, Settings, Sun, Users } from "lucide-react";
@@ -18,7 +19,9 @@ export function Header({
   className,
 }: HeaderProps) {
   const [showAgentManager, setShowAgentManager] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const statusText = status === "paused" ? "已暂停" : "讨论中";
+
   return (
     <>
       <header
@@ -47,7 +50,12 @@ export function Header({
               <Button variant="ghost" size="icon" className="h-9 w-9">
                 <Search className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-9 w-9"
+                onClick={() => setShowSettings(true)}
+              >
                 <Settings className="h-4 w-4" />
               </Button>
               <Button
@@ -78,6 +86,10 @@ export function Header({
       <AddAgentDialog
         isOpen={showAgentManager}
         onOpenChange={setShowAgentManager}
+      />
+      <SettingsDialog
+        open={showSettings}
+        onOpenChange={setShowSettings}
       />
     </>
   );

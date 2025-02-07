@@ -1,5 +1,5 @@
 
-export enum ProviderType {
+export enum SupportedAIProvider {
   DEEPSEEK = "deepseek",
   MOONSHOT = "moonshot",
   DOBRAIN = "dobrain",
@@ -23,5 +23,5 @@ export interface DobrainProviderConfig extends BaseProviderConfig {
 export type ProviderConfig = BaseProviderConfig | DobrainProviderConfig;
 
 export type ProviderConfigs = {
-  [key in ProviderType]: ProviderConfig;
+  [key in SupportedAIProvider]: ProviderConfig;
 };

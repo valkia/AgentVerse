@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { Menu, Users, Sun, Moon } from "lucide-react";
+import { Menu, Users, Sun, Moon, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MobileHeaderProps {
   title?: string;
   onToggleSidebar?: () => void;
   onShowAgentManagementPanel?: () => void;
+  onShowSettings?: () => void;
   isDarkMode?: boolean;
   onThemeToggle?: () => void;
   className?: string;
@@ -15,6 +16,7 @@ export function MobileHeader({
   title = "讨论系统",
   onToggleSidebar,
   onShowAgentManagementPanel,
+  onShowSettings,
   isDarkMode,
   onThemeToggle,
   className
@@ -34,6 +36,14 @@ export function MobileHeader({
           <Menu className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-medium flex-1">{title}</h1>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={onShowSettings}
+        >
+          <Settings className="h-5 w-5" />
+        </Button>
         <Button
           variant="ghost"
           size="icon"

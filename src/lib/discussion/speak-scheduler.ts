@@ -60,9 +60,9 @@ export class SpeakScheduler {
     const nextSpeaker = this.selectNextSpeaker();
     if (!nextSpeaker) return;
 
-    // 清空请求队列
-    this.requests = [];
-
+    // 清除被选中 agent 的所有其他请求
+    this.requests = this.requests.filter(req => req.agentId !== nextSpeaker.agentId);
+    
     // 执行回调
     nextSpeaker.onGranted().catch(error => {
       console.error('Error executing speak callback:', error);

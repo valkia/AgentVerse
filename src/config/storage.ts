@@ -12,5 +12,6 @@ export const STORAGE_CONFIG = {
     DISCUSSION_MEMBERS: 'discussion-members',
     MESSAGES: 'messages',
     DISCUSSIONS: 'discussions',
+    SETTINGS: 'settings',
   }
 } as const; 

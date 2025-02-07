@@ -1,9 +1,9 @@
 import OpenAI from "openai";
 import { APIError } from "openai/error";
 import {
+  ChatCompletionChunk,
   ChatCompletionCreateParams,
   ChatCompletionMessageParam,
-  ChatCompletionChunk
 } from "openai/resources/chat/completions";
 import { Observable } from "rxjs";
 
@@ -36,6 +36,7 @@ export interface BaseConfig {
 }
 
 export interface APIAdapter {
+  configure(config: BaseConfig): void;
   makeRequest(params: AIRequestParams): Promise<string>;
   makeStreamRequest(params: AIRequestParams): Observable<string>;
 }
@@ -49,6 +50,7 @@ export interface AIRequestParams {
 }
 
 export interface LLMProvider {
+  configure(config: BaseConfig): void;
   generateCompletion(
     messages: ChatMessage[],
     temperature?: number,
@@ -72,10 +74,15 @@ export interface ProviderParams {
 // Provider 抽象基类
 export abstract class BaseLLMProvider implements LLMProvider {
   constructor(
-    protected readonly config: BaseConfig,
+    protected config: BaseConfig,
     protected readonly adapter: APIAdapter
   ) {
     this.validateConfig(config);
+  }
+
+  configure(config: BaseConfig): void {
+    this.config = { ...this.config, ...config };
+    this.adapter.configure(config);
   }
 
   protected validateConfig(config: BaseConfig): void {
@@ -119,6 +126,14 @@ export class DirectAPIAdapter implements APIAdapter {
     this.client = new OpenAI({
       apiKey,
       baseURL,
+      dangerouslyAllowBrowser: true,
+    });
+  }
+
+  configure(config: BaseConfig): void {
+    this.client = new OpenAI({
+      apiKey: config.apiKey,
+      baseURL: config.baseUrl,
       dangerouslyAllowBrowser: true,
     });
   }
@@ -191,6 +206,10 @@ export class DirectAPIAdapter implements APIAdapter {
 
 export class ProxyAPIAdapter implements APIAdapter {
   constructor(private baseURL: string) {}
+
+  configure(config: BaseConfig): void {
+    this.baseURL = config.baseUrl || this.baseURL;
+  }
 
   async makeRequest(params: AIRequestParams): Promise<string> {
     try {
