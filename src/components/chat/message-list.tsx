@@ -1,7 +1,7 @@
-import { MessageMarkdownContent } from "@/components/discussion/message-actions";
+import { MessageMarkdownContent } from "@/components/chat/message-actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { QuickMemberSelector } from "@/components/discussion/quick-member-selector";
+import { QuickMemberSelector } from "@/components/discussion/member/quick-member-selector";
 import {
   ScrollableLayout,
   ScrollableLayoutRef,

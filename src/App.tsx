@@ -1,7 +1,7 @@
 import { ChatArea } from "@/components/chat/chat-area";
-import { DiscussionController } from "@/components/discussion/discussion-controller";
+import { DiscussionController } from "@/components/discussion/control/discussion-controller";
 import { DiscussionList } from "@/components/discussion/discussion-list";
-import { MemberList } from "@/components/discussion/member-list";
+import { MemberList } from "@/components/discussion/member/member-list";
 import { Header } from "@/components/layout/header";
 import { useAgents } from "@/hooks/useAgents";
 import { useMessages } from "@/hooks/useMessages";
@@ -11,7 +11,7 @@ import { discussionControlService } from "@/services/discussion-control.service"
 import { Discussion, NormalMessage } from "@/types/discussion";
 import { useEffect } from "react";
 import { useBeanState } from "rx-nested-bean";
-import { DiscussionSetupPage } from "./components/discussion/discussion-setup-page";
+import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
 import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 
 export function App() {

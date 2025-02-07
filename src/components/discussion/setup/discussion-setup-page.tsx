@@ -4,13 +4,13 @@ import { cn } from "@/lib/utils";
 import { Agent, AgentCombination } from "@/types/agent";
 import { Loader2, Users, Crown, Plus } from "lucide-react";
 import { useState } from "react";
-import { AddMemberDialog } from "./add-member-dialog";
+import { AddMemberDialog } from "../member/add-member-dialog";
 import { AGENT_COMBINATIONS, AgentCombinationType } from "@/config/agents";
 import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 import { useMessages } from "@/hooks/useMessages";
 import { useToast } from "@/hooks/use-toast";
-import { ModeratorCard } from "./setup/moderator-card";
-import { AgentCombinationCard } from "./setup/combination-card";
+import { ModeratorCard } from "./moderator-card";
+import { AgentCombinationCard } from "./combination-card";
 
 interface LoadingState {
   type: 'moderator' | 'combination' | 'skip' | null;

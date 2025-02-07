@@ -1,4 +1,4 @@
-import { DiscussionMarkdown } from "../markdown";
+import { DiscussionMarkdown } from "@/components/chat/markdown";
 import { ActionDisplay } from "./components/action-display";
 import { ActionComponentProps, MarkdownActionResults } from "./types";
 

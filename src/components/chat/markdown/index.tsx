@@ -1,3 +1,4 @@
+import { Action } from "@/components/chat/message-actions";
 import { Markdown } from "@/components/ui/markdown";
 import type { Root } from "mdast";
 import rehypeHighlight from "rehype-highlight";
@@ -5,7 +6,6 @@ import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import type { Plugin } from "unified";
 import type { Node } from "unist";
-import { Action } from "../message-actions";
 import { remarkAction } from "./plugins/remark-action";
 import { remarkMdastToHast } from "./plugins/remark-mdast-to-hast";
 import {
@@ -76,6 +76,5 @@ export type {
   ActionData,
   ActionNode,
   DiscussionMarkdownProps,
-  MarkdownActionResults
+  MarkdownActionResults,
 };
-
