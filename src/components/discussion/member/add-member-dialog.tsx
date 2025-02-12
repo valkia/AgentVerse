@@ -55,7 +55,7 @@ export function AddMemberDialog({ open, onOpenChange }: AddMemberDialogProps) {
           <DialogTitle>添加讨论成员</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto">
+        <div className="grid grid-cols-auto-fill gap-4 py-4 max-h-[60vh] overflow-y-auto">
           {availableAgents.map((agent) => (
             <div
               key={agent.id}
