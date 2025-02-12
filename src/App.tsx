@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import { useBeanState } from "rx-nested-bean";
 import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { BreakpointProvider } from "@/contexts/breakpoint-context";
 
 export function App() {
   const { isDarkMode, toggleDarkMode, rootClassName } = useTheme();
@@ -73,7 +74,7 @@ export function App() {
   // 侧边栏内容
   const sidebarContent = (
     <div className="h-full bg-card">
-        <DiscussionList />
+      <DiscussionList onSelect={() => setShowMobileSidebar(false)} />
     </div>
   );
 
@@ -138,37 +139,39 @@ export function App() {
   );
 
   return (
-    <div className={cn(rootClassName)} data-testid="app-root">
-      {/* PC端顶部Header */}
-      <Header
-        isDarkMode={isDarkMode}
-        toggleDarkMode={toggleDarkMode}
-        status={status}
-        className="hidden lg:flex"
-      />
+    <BreakpointProvider>
+      <div className={cn(rootClassName)} data-testid="app-root">
+        {/* PC端顶部Header */}
+        <Header
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+          status={status}
+          className="hidden lg:flex"
+        />
 
-      <div className="flex-1 min-h-0">
-        <ResponsiveContainer
-          sidebarContent={sidebarContent}
-          mainContent={mainContent}
-          showMobileSidebar={showMobileSidebar}
-          onMobileSidebarChange={setShowMobileSidebar}
+        <div className="flex-1 min-h-0">
+          <ResponsiveContainer
+            sidebarContent={sidebarContent}
+            mainContent={mainContent}
+            showMobileSidebar={showMobileSidebar}
+            onMobileSidebarChange={setShowMobileSidebar}
+          />
+        </div>
+
+        {/* 移动端成员管理抽屉 */}
+        <MobileMemberDrawer
+          open={showMobileMembers}
+          onOpenChange={setShowMobileMembers}
+        />
+        <AddAgentDialog
+          isOpen={showMobileAgentsDialog}
+          onOpenChange={setShowMobileAgentsDialog}
+        />
+        <SettingsDialog
+          open={showSettings}
+          onOpenChange={setShowSettings}
         />
       </div>
-
-      {/* 移动端成员管理抽屉 */}
-      <MobileMemberDrawer
-        open={showMobileMembers}
-        onOpenChange={setShowMobileMembers}
-      />
-      <AddAgentDialog
-        isOpen={showMobileAgentsDialog}
-        onOpenChange={setShowMobileAgentsDialog}
-      />
-      <SettingsDialog
-        open={showSettings}
-        onOpenChange={setShowSettings}
-      />
-    </div>
+    </BreakpointProvider>
   );
 }

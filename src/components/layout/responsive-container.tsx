@@ -1,5 +1,6 @@
-import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
+import { useBreakpoint } from "@/hooks/useBreakpoint";
+import { cn } from "@/lib/utils";
 
 interface ResponsiveContainerProps {
   children?: ReactNode;
@@ -17,49 +18,32 @@ export function ResponsiveContainer({
   showMobileSidebar = false,
   onMobileSidebarChange
 }: ResponsiveContainerProps) {
+  const { isMobile } = useBreakpoint();
+
   return (
-    <div className={cn(
-      "h-full w-full overflow-hidden",
-      className
-    )}>
-      {/* 移动端侧边栏 */}
+    <div className={cn("h-full w-full overflow-hidden flex", className)}>
       {sidebarContent && (
-        <div className={cn(
-          "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm lg:hidden",
-          showMobileSidebar ? "block" : "hidden"
-        )}>
-          <div className="absolute inset-y-0 left-0 w-[280px] bg-background border-r">
-            <div className="h-full overflow-y-auto">
-              {sidebarContent}
-            </div>
-          </div>
-          {/* 点击背景关闭侧边栏 */}
-          <div 
-            className="absolute inset-0 bg-transparent"
-            onClick={() => onMobileSidebarChange?.(false)}
-          />
-        </div>
-      )}
-
-      {/* 移动端主内容 */}
-      <div className="block lg:hidden h-full">
-        <div className="h-full flex flex-col">
-          {mainContent}
-        </div>
-      </div>
-
-      {/* 桌面端布局 */}
-      <div className="hidden lg:grid lg:grid-cols-[280px_1fr] h-full">
-        {/* 桌面端侧边栏 */}
-        {sidebarContent && (
-          <div className="h-full border-r overflow-y-auto">
+        <>
+          <div
+            className={cn(
+              "w-[280px] h-full border-r border-border bg-card",
+              "fixed lg:relative inset-y-0 left-0 z-50",
+              "transform transition-transform duration-300 ease-in-out",
+              showMobileSidebar ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+            )}
+          >
             {sidebarContent}
           </div>
-        )}
-        {/* 桌面端主内容 */}
-        <div className="h-full overflow-y-auto">
-          {mainContent}
-        </div>
+          {isMobile && showMobileSidebar && (
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+              onClick={() => onMobileSidebarChange?.(false)}
+            />
+          )}
+        </>
+      )}
+      <div className="flex-1 min-h-0 flex flex-col overflow-auto">
+        {mainContent}
       </div>
     </div>
   );
