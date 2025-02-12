@@ -36,15 +36,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           <DialogTitle
             className="flex items-center justify-between pr-12"
             style={{
-              marginTop: "-6px",
+              marginTop: "-30px",
             }}
           >
             <span className="text-lg font-medium">设置</span>{" "}
             <Button
-              variant="ghost"
+              variant="secondary"
               size="sm"
               onClick={() => setShowResetConfirm(true)}
-              className="text-muted-foreground text-xs hover:text-primary flex items-center gap-2"
+              className="text-muted-foreground text-xs hover:text-primary flex items-center gap-2 mr-3"
             >
               <RotateCcw className="h-3 w-3" />
               恢复默认配置

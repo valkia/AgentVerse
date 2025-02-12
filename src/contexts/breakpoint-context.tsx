@@ -1,6 +1,6 @@
+import { createContext, ReactNode, useContext, useMemo } from 'react';
 import { BREAKPOINTS, type Breakpoint } from '@/constants/breakpoints';
 import { useWindowSize } from '@/hooks/useWindowSize';
-import { createContext, ReactNode, useMemo } from 'react';
 
 interface BreakpointContextValue {
   breakpoint: Breakpoint;
@@ -12,7 +12,7 @@ interface BreakpointContextValue {
   isLessThan: (bp: Breakpoint) => boolean;
 }
 
-export const BreakpointContext = createContext<BreakpointContextValue | null>(null);
+const BreakpointContext = createContext<BreakpointContextValue | null>(null);
 
 export function BreakpointProvider({ children }: { children: ReactNode }) {
   const { width } = useWindowSize();
@@ -45,3 +45,11 @@ export function BreakpointProvider({ children }: { children: ReactNode }) {
     </BreakpointContext.Provider>
   );
 }
+
+export function useBreakpoint() {
+  const context = useContext(BreakpointContext);
+  if (!context) {
+    throw new Error('useBreakpoint must be used within a BreakpointProvider');
+  }
+  return context;
+} 

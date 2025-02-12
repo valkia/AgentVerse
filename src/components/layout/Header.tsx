@@ -47,19 +47,19 @@ export function Header({
               {statusText}
             </span>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Button variant="secondary" size="icon" className="h-9 w-9">
                 <Search className="h-4 w-4" />
               </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="secondary"
+                size="icon"
                 className="h-9 w-9"
                 onClick={() => setShowSettings(true)}
               >
                 <Settings className="h-4 w-4" />
               </Button>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="icon"
                 onClick={() => setShowAgentManager(true)}
                 className="h-9 w-9"
@@ -67,7 +67,7 @@ export function Header({
                 <Users className="h-4 w-4" />
               </Button>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="icon"
                 onClick={toggleDarkMode}
                 className="h-9 w-9"

@@ -16,7 +16,7 @@ import { Eraser } from "lucide-react";
 
 interface ClearMessagesButtonProps {
   className?: string;
-  variant?: "default" | "outline" | "ghost";
+  variant?: "default" | "outline" | "ghost" | "secondary" | "destructive";
   size?: "default" | "sm" | "lg" | "icon";
   mode?: "current" | "all";
 }
@@ -47,7 +47,7 @@ export function ClearMessagesButton({
           variant={variant}
           size={size}
           className={cn(
-            "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
+            "text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors",
             className
           )}
         >
@@ -66,7 +66,7 @@ export function ClearMessagesButton({
           <AlertDialogTitle>
             {mode === "current" ? "清空当前会话" : "清空所有会话"}
           </AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="text-muted-foreground">
             {mode === "current" 
               ? "此操作将清空当前会话的所有消息记录，此操作不可撤销。"
               : "此操作将清空所有会话的全部消息记录，此操作不可撤销。"}
@@ -76,7 +76,7 @@ export function ClearMessagesButton({
           <AlertDialogCancel>取消</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleClear}
-            className="bg-destructive hover:bg-destructive/90"
+            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
           >
             确认清空
           </AlertDialogAction>

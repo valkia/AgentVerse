@@ -216,11 +216,11 @@ export function DiscussionController({
           <ClearMessagesButton
             size="icon"
             className="shrink-0"
-            variant="ghost"
+            variant="secondary"
           />
 
           <Button
-            variant="ghost"
+            variant="secondary"
             size="icon"
             onClick={() => setShowSettings(!showSettings)}
             className={cn(

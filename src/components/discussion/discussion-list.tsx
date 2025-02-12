@@ -20,7 +20,6 @@ interface DiscussionListProps {
   className?: string;
   headerClassName?: string;
   listClassName?: string;
-  onSelect?: () => void;
 }
 
 interface DiscussionItemProps {
@@ -126,7 +125,7 @@ function DiscussionItem({ discussion, isActive, onClick, onRename, onDelete }: D
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   size="icon"
                   className="h-7 w-7 opacity-0 group-hover:opacity-100 discussion-actions"
                 >
@@ -175,8 +174,7 @@ function DiscussionItem({ discussion, isActive, onClick, onRename, onDelete }: D
 export function DiscussionList({
   className,
   headerClassName,
-  listClassName,
-  onSelect
+  listClassName
 }: DiscussionListProps) {
   const { agents } = useAgents();
   const {
@@ -189,16 +187,11 @@ export function DiscussionList({
     deleteDiscussion
   } = useDiscussions();
 
-  const handleSelectDiscussion = (id: string) => {
-    selectDiscussion(id);
-    onSelect?.();
-  };
-
   const handleCreateDiscussion = async () => {
     if (agents.length === 0) return;
     const discussion = await createDiscussion("新的讨论");
     if (discussion) {
-      handleSelectDiscussion(discussion.id);
+      selectDiscussion(discussion.id);
     }
   };
 
@@ -239,7 +232,7 @@ export function DiscussionList({
               key={discussion.id}
               discussion={discussion}
               isActive={discussion.id === currentDiscussion?.id}
-              onClick={() => handleSelectDiscussion(discussion.id)}
+              onClick={() => selectDiscussion(discussion.id)}
               onRename={(title) => updateDiscussion(discussion.id, { title })}
               onDelete={() => deleteDiscussion(discussion.id)}
             />

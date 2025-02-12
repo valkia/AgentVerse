@@ -17,7 +17,7 @@ export function MemberToggleButton({
 }: MemberToggleButtonProps) {
   return (
     <Button
-      variant="ghost"
+      variant="secondary"
       size="sm"
       onClick={onClick}
       className={cn(

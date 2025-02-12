@@ -46,7 +46,7 @@ export function AgentList({
             </div>
             <div className="flex items-center gap-1">
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="icon"
                 onClick={() => onEditAgent(agent)}
                 className="h-8 w-8"
@@ -54,7 +54,7 @@ export function AgentList({
                 <Settings className="h-4 w-4" />
               </Button>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="icon"
                 onClick={() => onDeleteAgent(agent.id)}
                 className="h-8 w-8 text-destructive"

@@ -120,7 +120,7 @@ export function MemberItem({
   return (
     <Card
       className={cn(
-        "transition-all duration-200 cursor-pointer group overflow-hidden outline-none bg-white",
+        "transition-all duration-200 cursor-pointer group overflow-hidden outline-none bg-background",
         isExpanded ? "shadow-sm" : "hover:shadow-sm",
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "rounded-xl",

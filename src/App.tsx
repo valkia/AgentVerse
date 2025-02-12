@@ -7,18 +7,18 @@ import { MobileMemberDrawer } from "@/components/discussion/member/mobile-member
 import { Header } from "@/components/layout/header";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { ResponsiveContainer } from "@/components/layout/responsive-container";
-import { SettingsDialog } from "@/components/settings/settings-dialog";
-import { BreakpointProvider } from "@/contexts/breakpoint-context";
 import { useAgents } from "@/hooks/useAgents";
 import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 import { useMessages } from "@/hooks/useMessages";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { discussionControlService } from "@/services/discussion-control.service";
-import { Discussion } from "@/types/discussion";
+import { Discussion, NormalMessage } from "@/types/discussion";
 import { useEffect, useState } from "react";
 import { useBeanState } from "rx-nested-bean";
 import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
+import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { BreakpointProvider } from "@/contexts/breakpoint-context";
 
 export function App() {
   const { isDarkMode, toggleDarkMode, rootClassName } = useTheme();
@@ -57,17 +57,24 @@ export function App() {
       agentId,
       type: "text",
     });
+    // 如果是第一条消息，设置为主题
+    if (messages.length === 0) {
+      discussionControlService.setTopic(content);
+    }
     if (agentMessage) discussionControlService.onMessage(agentMessage);
   };
 
   useEffect(() => {
+    if (messages.length > 0) {
+      discussionControlService.setTopic((messages[0] as NormalMessage).content);
+    }
     discussionControlService.setMessages(messages);
   }, [messages]);
 
   // 侧边栏内容
   const sidebarContent = (
     <div className="h-full bg-card">
-      <DiscussionList onSelect={() => setShowMobileSidebar(false)} />
+        <DiscussionList />
     </div>
   );
 
@@ -160,7 +167,10 @@ export function App() {
           isOpen={showMobileAgentsDialog}
           onOpenChange={setShowMobileAgentsDialog}
         />
-        <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
+        <SettingsDialog
+          open={showSettings}
+          onOpenChange={setShowSettings}
+        />
       </div>
     </BreakpointProvider>
   );

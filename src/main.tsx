@@ -8,6 +8,7 @@ import "./index.css";
 import { discussionControlService } from "@/services/discussion-control.service.ts";
 import { discussionMemberService } from "@/services/discussion-member.service.ts";
 import { discussionMembersResource, discussionsResource } from "@/resources/index.ts";
+import "./styles/theme.css";
 
 (window as any).discussionService = discussionService;
 (window as any).discussionControlService = discussionControlService;
