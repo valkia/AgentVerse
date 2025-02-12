@@ -5,8 +5,8 @@ import { Agent } from "@/types/agent";
 export const MentionRules = {
   // 生成 @ 相关的提示词
   generatePrompt: (agents: Agent[], isModeratorRole: boolean) => {
-    const agentNames = agents.map(agent => agent.name).join('、');
-    
+    const agentNames = agents.map((agent) => agent.name).join("、");
+
     // 参与者的提示词
     if (!isModeratorRole) {
       return `当前讨论成员：${agentNames}
@@ -23,9 +23,12 @@ export const MentionRules = {
 
   // 创建检测 @ 的正则表达式
   createMentionPattern: (name: string): RegExp => {
-    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp(`@(?:"${escapedName}"|'${escapedName}'|${escapedName})(?:\\b|$)`, 'gmi');
-  }
+    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(
+      `@(?:"${escapedName}"|'${escapedName}'|${escapedName})(?:\\b|$)`,
+      "gmi"
+    );
+  },
 };
 
 export function generateCapabilityPrompt(capabilities: Capability[]): string {
@@ -34,11 +37,7 @@ export function generateCapabilityPrompt(capabilities: Capability[]): string {
   return `
 作为讨论主导者，你可以使用以下能力：
 
-${capabilities
-      .map(
-        (cap) => `${cap.name}: ${cap.description}`
-      )
-      .join("\n")}
+${capabilities.map((cap) => `${cap.name}: ${cap.description}`).join("\n")}
 
 使用方式：
 使用 :::action 容器语法来调用能力。每个action都需要包含一个简短的description字段，用于描述这个操作的目的或正在进行的操作。
@@ -118,33 +117,70 @@ action调用完成后，系统会返回执行结果信息。
 3. 执行错误：status 为 'execution_error'，说明能力执行失败，需要检查参数或换其他方式
 4. 未知错误：status 为 'unknown_error'，需要报告错误并尝试其他方案
 
+等待一段时间后，执行结果会包含在 <action-result> 标签中进行返回，请根据执行结果采取相应的措施，确保讨论能够顺利进行。每个操作都应包含唯一的 operationId。
+
 请根据执行结果采取相应的措施，确保讨论能够顺利进行。每个操作都应包含唯一的 operationId。
 `;
 }
 
 // 基础角色设定
-export const createRolePrompt = (agent: Agent, memberAgents: Agent[]) => `你是 ${agent.name}。
+export const createRolePrompt = (
+  agent: Agent,
+  memberAgents: Agent[]
+) => `你是 ${agent.name}。
 
-角色定位：${agent.role === 'moderator' ? '主持人' : '参与者'}
+角色定位：${agent.role === "moderator" ? "主持人" : "参与者"}
 性格特征：${agent.personality}
-专业领域：${agent.expertise.join('、')}
+专业领域：${agent.expertise.join("、")}
 
 对话规则：
 1. 保持自然的对话方式，像真实的专家一样交谈
-2. ${MentionRules.generatePrompt(memberAgents, agent.role === 'moderator')}
+2. ${MentionRules.generatePrompt(memberAgents, agent.role === "moderator")}
 3. 保持专业性，基于自己的专长领域发言
-4. ${agent.role === 'moderator' 
-  ? '作为主持人：\n   - 引导讨论方向\n   - 在讨论偏离主题时温和地纠正\n   - 在合适的时机总结观点' 
-  : '作为参与者：\n   - 积极发表专业意见\n   - 与其他专家良性互动\n   - 对不同观点保持开放态度'}
+4. ${
+  agent.role === "moderator"
+    ? "作为主持人：\n   - 引导讨论方向\n   - 在讨论偏离主题时温和地纠正\n   - 在合适的时机总结观点"
+    : "作为参与者：\n   - 积极发表专业意见\n   - 与其他专家良性互动\n   - 对不同观点保持开放态度"
+}
 
-${agent.prompt || ''}`;
+请根据这些信息，判断当前的讨论是否需要结束，如果需要结束，请直接返回结束信息，否则继续进行讨论。
+
+世界系统（world system）说明：系统将会提供你与环境的交互信息，例如，其它agent的发言信息格式为：
+AgentName： xxxx....
+而你自己的历史发言信息为：
+我 xxxx....
+其它系统事件信息为：
+[system-event]：xxxx....
+
+当你要发言时，请直接给出你的发言内容，不许包含任何前缀。
+
+示例：
+历史消息：
+AgentName：xxxx....
+[system-event]：xxxx....
+我：xxxx....
+[system-event]：xxxx....
+user:xxxx....
+
+你的发言：
+xxxx....
+
+
+
+${agent.prompt || ""}`;
 
 // 对话格式化
-export const formatMessage = (content: string, isMyMessage: boolean, speakerName: string) => {
+export const formatMessage = (
+  content: string,
+  isMyMessage: boolean,
+  speakerName: string
+) => {
   const prefix = isMyMessage ? "我" : speakerName;
   return `${prefix}: ${content}`;
 };
 
 // Action 结果格式化
-export const formatActionResult = (results: unknown) => 
-  `执行结果:\n${JSON.stringify(results, null, 2)}`;
+export const formatActionResult = (results: unknown) =>
+  `[system-event]:<action-result desc-for-ai="don't show this to user">
+${JSON.stringify(results, null, 2)}
+</action-result>`;

@@ -2,7 +2,6 @@ import { Action } from "@/components/chat/message-actions";
 import { Markdown } from "@/components/ui/markdown";
 import type { Root } from "mdast";
 import rehypeHighlight from "rehype-highlight";
-import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import type { Plugin } from "unified";
 import type { Node } from "unist";
@@ -42,7 +41,7 @@ export function DiscussionMarkdown({
 
   const finalRehypePlugins = [
     rehypeHighlight as unknown as Plugin<[], Node>,
-    [rehypeRaw as unknown as Plugin<[], Node>, { passThrough: ["action"] }],
+    // [rehypeRaw as unknown as Plugin<[], Node>, { passThrough: ["action"] }],
     ...rehypePlugins,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ] as any[];
@@ -76,5 +75,6 @@ export type {
   ActionData,
   ActionNode,
   DiscussionMarkdownProps,
-  MarkdownActionResults,
+  MarkdownActionResults
 };
+
