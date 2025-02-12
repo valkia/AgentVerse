@@ -6,19 +6,13 @@ import {
   DiscussionKeys,
 } from "@/lib/discussion/discussion-env";
 import { RxEvent } from "@/lib/rx-event";
-import {
-  agentListResource,
-  discussionMembersResource,
-  messagesResource,
-} from "@/resources";
+import { agentListResource, messagesResource } from "@/resources";
 import { discussionCapabilitiesResource } from "@/resources/discussion-capabilities.resource";
-import { discussionMemberService } from "@/services/discussion-member.service";
 import { messageService } from "@/services/message.service";
 import { typingIndicatorService } from "@/services/typing-indicator.service";
 import { AgentMessage, NormalMessage } from "@/types/discussion";
 import { DiscussionMember } from "@/types/discussion-member";
 import { createNestedBean, createProxyBean } from "rx-nested-bean";
-import { agentSelector } from "./agent-selector.service";
 import {
   DiscussionError,
   DiscussionErrorType,
@@ -164,33 +158,12 @@ export class DiscussionControlService {
     this.messagesBean.set(messages);
   }
 
-  removeMember(memberId: string) {
-    const members = this.membersBean.get();
-    this.membersBean.set(members.filter((m) => m.agentId !== memberId));
-  }
-
-  setTopic(topic: string) {
-    this.topicBean.set(topic);
-  }
-
-  getTopic() {
-    return this.topicBean.get();
-  }
-
-  getRoundMessageCount() {
-    return this.env.speakScheduler.messageCounterBean.get();
-  }
-
   onMessage(message: AgentMessage) {
     this.env.eventBus.emit(DiscussionKeys.Events.message, message);
   }
 
   // 讨论级初始化
-  private initializeDiscussion(topic: string): Promise<string[]> {
-    // if (!topic) {
-    //   throw new DiscussionError(DiscussionErrorType.NO_TOPIC, "未设置讨论主题");
-    // }
-
+  private initializeDiscussion() {
     // 添加讨论级事件监听
     const thinkingOff = this.env.eventBus.on(
       DiscussionKeys.Events.thinking,
@@ -226,7 +199,6 @@ export class DiscussionControlService {
     });
 
     this.discussionCleanupHandlers.push(limitReachedOff);
-    return this.selectParticipants(topic);
   }
 
   // 运行时控制
@@ -258,9 +230,6 @@ export class DiscussionControlService {
     for (const agent of this.agents.values()) {
       agent.resume();
     }
-
-    // 3. 发送讨论恢复事件
-    this.env.eventBus.emit(DiscussionKeys.Events.discussionResume, null);
   }
 
   // 清理方法分层
@@ -315,60 +284,6 @@ export class DiscussionControlService {
     this.topicBean.set("");
   }
 
-  // 辅助方法：选择参与者
-  private async selectParticipants(topic: string): Promise<string[]> {
-    const currentMembers = this.membersBean.get();
-    if (currentMembers.length > 0) {
-      return currentMembers.map((member) => member.agentId);
-    }
-
-    const availableAgents = agentListResource.read().data;
-    const selectedIds = await agentSelector.selectAgents(
-      topic,
-      availableAgents
-    );
-    if (selectedIds.length === 0) {
-      throw new DiscussionError(
-        DiscussionErrorType.NO_PARTICIPANTS,
-        "没有合适的参与者"
-      );
-    }
-
-    await this.updateDiscussionMembers(selectedIds);
-    return selectedIds;
-  }
-
-  private async updateDiscussionMembers(agentIds: string[]) {
-    const discussionId = this.getCurrentDiscussionId();
-    if (!discussionId) return;
-
-    // 1. 获取当前已存在的成员
-    const existingMembers = this.membersBean.get();
-    const existingAgentIds = new Set(existingMembers.map((m) => m.agentId));
-
-    // 2. 过滤出需要新增的成员
-    const newAgentIds = agentIds.filter((id) => !existingAgentIds.has(id));
-
-    if (newAgentIds.length === 0) {
-      console.log("[DiscussionControl] No new members to add");
-      return;
-    }
-
-    // 3. 创建新成员
-    const members: Omit<
-      DiscussionMember,
-      "id" | "joinedAt" | "discussionId"
-    >[] = newAgentIds.map((id) => ({
-      agentId: id,
-      isAutoReply: true,
-    }));
-
-    // 4. 添加新成员并刷新资源
-    console.log("[DiscussionControl] Adding new members:", newAgentIds);
-    await discussionMemberService.createMany(discussionId, members);
-    await discussionMembersResource.current.reload();
-  }
-
   private handleError(
     error: unknown,
     message: string,
@@ -403,38 +318,13 @@ export class DiscussionControlService {
       const lastMessage = messages[messages.length - 1];
 
       // 1. 恢复讨论级资源
-      await this.initializeDiscussion(this.topicBean.get());
+      await this.initializeDiscussion();
 
       // 2. 恢复运行时状态
       this.resume();
 
       // 3. 重放最后一条消息
       this.env.eventBus.emit(DiscussionKeys.Events.message, lastMessage);
-    }
-  }
-
-  // 开始新讨论
-  private async startNewDiscussion(selectedIds: string[]): Promise<void> {
-    const topic = this.topicBean.get();
-
-    // 1. 恢复运行时状态
-    this.resume();
-
-    // 2. 发送讨论开始事件
-    this.env.eventBus.emit(DiscussionKeys.Events.discussionStart, { topic });
-
-    // 3. 发送初始消息
-    const moderator = this.agents.get(selectedIds[0]);
-    if (moderator) {
-      const initialMessage: NormalMessage = {
-        agentId: "system",
-        content: `用户：${topic}`,
-        type: "text",
-        id: "system",
-        discussionId: this.getCurrentDiscussionId()!,
-        timestamp: new Date(),
-      };
-      this.env.eventBus.emit(DiscussionKeys.Events.message, initialMessage);
     }
   }
 
@@ -447,7 +337,7 @@ export class DiscussionControlService {
         return;
       }
 
-      // 2. 检查是否有历史消息和成员
+      // 2. 检查是否有历史消息和成员，如果有则恢复讨论
       if (
         this.messagesBean.get().length > 0 &&
         this.membersBean.get().length > 0
@@ -456,16 +346,6 @@ export class DiscussionControlService {
         await this.resumeExistingDiscussion();
         return;
       }
-
-      // 3. 初始化新讨论
-      console.log("[DiscussionControl] Initializing new discussion");
-      const selectedIds = await this.initializeDiscussion(
-        this.topicBean.get() || "一个用户启动了讨论，但不知道用户的意图是什么"
-      );
-
-      // 4. 启动讨论
-      console.log("[DiscussionControl] Starting new discussion");
-      await this.startNewDiscussion(selectedIds);
     } catch (error) {
       console.error("[DiscussionControl] Failed to run discussion:", error);
       this.handleError(error, "讨论运行失败");

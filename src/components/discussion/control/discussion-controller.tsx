@@ -119,7 +119,7 @@ export function DiscussionController({
   }, [members]);
 
   useEffect(() => {
-    if (status === "active" && discussionControlService.getTopic()) {
+    if (status === "active") {
       const activeMembers = members.filter((m) => m.isAutoReply);
       if (activeMembers.length > 0) {
         discussionControlService.run();
