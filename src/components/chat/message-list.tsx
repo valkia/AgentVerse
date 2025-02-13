@@ -1,25 +1,18 @@
-import { MessageMarkdownContent } from "@/components/chat/message-actions";
+import { MessageMarkdownContent } from "@/components/chat/agent-action-display";
+import { QuickMemberSelector } from "@/components/discussion/member/quick-member-selector";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { QuickMemberSelector } from "@/components/discussion/member/quick-member-selector";
+import { useToast } from "@/hooks/use-toast";
+import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 import {
   ScrollableLayout,
   ScrollableLayoutRef,
 } from "@/layouts/scrollable-layout";
 import { reorganizeMessages } from "@/lib/discussion/message-utils";
 import { cn } from "@/lib/utils";
-import {
-  AgentMessage,
-  MessageWithResults
-} from "@/types/discussion";
-import { ArrowDown } from "lucide-react";
-import {
-  forwardRef,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
-import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
+import { AgentMessage, MessageWithResults } from "@/types/discussion";
+import { ArrowDown, Check, Copy } from "lucide-react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 
 interface MessageItemProps {
   message: MessageWithResults;
@@ -31,6 +24,24 @@ interface MessageItemProps {
 
 function MessageItem({ message, agentInfo }: MessageItemProps) {
   const { getName, getAvatar } = agentInfo;
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      toast({
+        description: "已复制到剪贴板",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({
+        variant: "destructive",
+        description: "复制失败",
+      });
+    }
+  };
 
   return (
     <div className="group animate-fadeIn hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all duration-200">
@@ -52,10 +63,25 @@ function MessageItem({ message, agentInfo }: MessageItemProps) {
           </div>
           <div className="relative">
             <div className="text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 group-hover:border-gray-300 dark:group-hover:border-gray-600 px-4 py-3 rounded-xl break-words shadow-sm group-hover:shadow-md transition-all duration-200">
-              <MessageMarkdownContent
-                content={message.content}
-                actionResults={message.actionResults}
-              />
+              <div className="space-y-2">
+                <MessageMarkdownContent
+                  content={message.content}
+                  actionResults={message.actionResults}
+                />
+                <button
+                  onClick={handleCopy}
+                  className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  {copied ? (
+                    <Check className="h-3.5 w-3.5 text-green-500" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    {copied ? "已复制" : "复制"}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -109,7 +135,9 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
         <div className="h-full flex items-center justify-center">
           <div className="max-w-2xl w-full p-6">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold tracking-tight">开始一场新的讨论</h2>
+              <h2 className="text-2xl font-semibold tracking-tight">
+                开始一场新的讨论
+              </h2>
               <p className="text-sm text-muted-foreground mt-2">
                 选择合适的成员来启动讨论
               </p>

@@ -1,4 +1,4 @@
-import { Action } from "@/components/chat/message-actions";
+import { Action } from "@/components/chat/agent-action-display";
 import { Markdown } from "@/components/ui/markdown";
 import type { Root } from "mdast";
 import rehypeHighlight from "rehype-highlight";

@@ -1,6 +1,6 @@
 import type { MarkdownProps } from "@/components/ui/markdown/types";
 import type { Node } from "unist";
-import type { ActionComponentProps, ActionData, MarkdownActionResults } from "../message-actions/types";
+import type { ActionComponentProps, ActionData, MarkdownActionResults } from "../agent-action-display/types";
 
 /**
  * Action 节点的类型定义
