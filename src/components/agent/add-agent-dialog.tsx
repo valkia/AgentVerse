@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { useAgentForm } from "@/hooks/useAgentForm";
 import { useAgents } from "@/hooks/useAgents";
 import { Loader2, PlusCircle, Search } from "lucide-react";
-import React, { useState } from "react";
+import match from "pinyin-match"; // 添加 pinyin-match
+import React, { useMemo, useState } from "react"; // 添加 useMemo
 
 interface AddAgentDialogProps {
   isOpen: boolean;
@@ -27,11 +28,25 @@ export const AddAgentDialog: React.FC<AddAgentDialogProps> = ({
     handleSubmit,
   } = useAgentForm(agents, updateAgent);
 
-  const filteredAgents = agents.filter(
-    (agent) =>
-      agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      agent.personality.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // 使用 useMemo 优化搜索过滤逻辑
+  const filteredAgents = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return agents;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return agents.filter((agent) => {
+      // 支持名称、个性和拼音匹配
+      const nameMatch =
+        agent.name.toLowerCase().includes(query) ||
+        match.match(agent.name, query);
+      const personalityMatch =
+        agent.personality.toLowerCase().includes(query) ||
+        match.match(agent.personality, query);
+
+      return nameMatch || personalityMatch;
+    });
+  }, [agents, searchQuery]);
 
   return (
     <>
