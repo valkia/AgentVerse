@@ -11,6 +11,7 @@ import { AgentMessage } from "@/types/discussion";
 import { ArrowDown } from "lucide-react";
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { MessageItem } from "./message-item";
+import { MessageCapture } from "./message-capture";
 
 interface MessageListProps {
   messages: AgentMessage[];
@@ -34,6 +35,7 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
     const { members } = useDiscussionMembers();
     const scrollableLayoutRef = useRef<ScrollableLayoutRef>(null);
     const [showScrollButton, setShowScrollButton] = useState(false);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
 
     useImperativeHandle(ref, () => ({
       scrollToBottom: () => scrollableLayoutRef.current?.scrollToBottom(),
@@ -99,7 +101,7 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
             autoScrollMode="smart"
             onScroll={handleScroll}
           >
-            <div className="py-4">
+            <div className="py-4" ref={messagesContainerRef}>
               <div className="space-y-6">
                 {reorganizedMessages.map((message) => (
                   <MessageItem
@@ -112,16 +114,25 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
             </div>
           </ScrollableLayout>
         </div>
-        {showScrollButton && (
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute right-4 bottom-4 rounded-full shadow-lg bg-background/80 backdrop-blur hover:bg-background z-10"
-            onClick={() => scrollableLayoutRef.current?.scrollToBottom()}
-          >
-            <ArrowDown className="h-4 w-4" />
-          </Button>
-        )}
+        
+        {/* 浮动按钮组 */}
+        <div className="absolute right-4 bottom-4 flex flex-col gap-2">
+          <MessageCapture
+            containerRef={messagesContainerRef}
+            className="rounded-full shadow-lg bg-background/80 backdrop-blur hover:bg-background"
+          />
+          
+          {showScrollButton && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full shadow-lg bg-background/80 backdrop-blur hover:bg-background"
+              onClick={() => scrollableLayoutRef.current?.scrollToBottom()}
+            >
+              <ArrowDown className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
