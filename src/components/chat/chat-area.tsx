@@ -4,11 +4,11 @@ import { useDiscussions } from "@/hooks/useDiscussions";
 import { cn } from "@/lib/utils";
 import { discussionControlService } from "@/services/discussion-control.service";
 import { AgentMessage } from "@/types/discussion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useRef } from "react";
 import { ChatEmptyGuide } from "./chat-empty-guide";
+import { MessageList, MessageListRef } from "./message";
 import { MessageInput, MessageInputRef } from "./message-input";
-import { MessageList, MessageListRef } from "./message-list";
-import { AnimatePresence, motion } from "framer-motion";
 
 interface ChatAreaProps {
   messages: AgentMessage[];
