@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Download, Loader2, X } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 
 interface MessagePreviewDialogProps {
   open: boolean;
@@ -8,6 +8,8 @@ interface MessagePreviewDialogProps {
   imageUrl: string | null;
   onDownload: () => void;
   isGenerating: boolean;
+  error?: string | null;
+  isMobile?: boolean;
 }
 
 export function MessagePreviewDialog({
@@ -16,28 +18,42 @@ export function MessagePreviewDialog({
   imageUrl,
   onDownload,
   isGenerating,
+  error,
+  isMobile,
 }: MessagePreviewDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-full p-0 gap-0 overflow-hidden bg-gradient-to-b from-background to-background/95">
         {/* 顶部标题栏 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-background/50 backdrop-blur-sm">
-          <h2 className="text-lg font-semibold tracking-tight">预览与分享</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full hover:bg-background/80"
-            onClick={() => onOpenChange(false)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center px-6 py-4 border-b bg-background/50 backdrop-blur-sm">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">预览与分享</h2>
+            {isMobile && (
+              <p className="text-xs text-muted-foreground mt-1">
+                提示：在移动设备上，消息过多可能会导致生成失败
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="relative flex flex-col h-[80vh]">
           {/* 预览区域 */}
           <div className="flex-1 overflow-auto px-6 py-8 bg-gradient-to-b from-background/5 to-background/10">
             <div className="min-h-full flex items-center justify-center">
-              {isGenerating ? (
+              {error ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-sm text-red-500">{error}</p>
+                    <Button
+                      variant="outline"
+                      className="mt-4"
+                      onClick={() => onOpenChange(false)}
+                    >
+                      关闭
+                    </Button>
+                  </div>
+                </div>
+              ) : isGenerating ? (
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative">
                     <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
