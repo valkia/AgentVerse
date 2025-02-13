@@ -8,6 +8,7 @@ import { useRef } from "react";
 import { ChatEmptyGuide } from "./chat-empty-guide";
 import { MessageInput, MessageInputRef } from "./message-input";
 import { MessageList, MessageListRef } from "./message-list";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface ChatAreaProps {
   messages: AgentMessage[];
@@ -66,35 +67,61 @@ export function ChatArea({
 
   return (
     <div className={cn("flex flex-col flex-1 overflow-hidden h-full", className)}>
-      {messages.length === 0 ? (
-        <ChatEmptyGuide
-          scenarios={DEFAULT_SCENARIOS}
-          membersCount={members.length}
-          onSuggestionClick={(template) => {
-            messageInputRef.current?.setValue(template);
-          }}
-        />
-      ) : (
-        <MessageList
-          ref={messageListRef}
-          messages={messages}
-          agentInfo={agentInfoGetter}
-          className={cn(defaultClasses.messageList, messageListClassName)}
-          data-testid="chat-message-list"
-        />
-      )}
+      <div className="flex-1 min-h-0 relative">
+        <AnimatePresence mode="wait">
+          {messages.length === 0 ? (
+            <motion.div
+              key="empty-guide"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 overflow-auto"
+            >
+              <ChatEmptyGuide
+                scenarios={DEFAULT_SCENARIOS}
+                membersCount={members.length}
+                onSuggestionClick={(template) => {
+                  messageInputRef.current?.setValue(template);
+                  messageInputRef.current?.focus();
+                }}
+              />
+            </motion.div>
+          ) : (
+            <MessageList
+              ref={messageListRef}
+              messages={messages}
+              agentInfo={agentInfoGetter}
+              className={cn(defaultClasses.messageList, messageListClassName)}
+              data-testid="chat-message-list"
+            />
+          )}
+        </AnimatePresence>
+      </div>
 
       <div
-        className={cn(defaultClasses.inputArea, inputAreaClassName)}
+        className={cn(
+          "flex-none border-t dark:border-gray-700",
+          "relative",
+          inputAreaClassName
+        )}
         data-testid="chat-input-area"
       >
-        <MessageInput
-          ref={messageInputRef}
-          isFirstMessage={isFirstMessage}
-          onSendMessage={handleSendMessage}
-          className={defaultClasses.inputWrapper}
-          data-testid="chat-message-input"
-        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 to-background/95 dark:from-gray-900/60 dark:to-gray-900/95 pointer-events-none" />
+        
+        <div className="absolute inset-0 backdrop-blur-sm pointer-events-none" />
+
+        <div className="relative">
+          <MessageInput
+            ref={messageInputRef}
+            isFirstMessage={isFirstMessage}
+            onSendMessage={handleSendMessage}
+            className={cn(
+              defaultClasses.inputWrapper,
+              "bg-gray-50/80 dark:bg-gray-800/80"
+            )}
+            data-testid="chat-message-input"
+          />
+        </div>
       </div>
     </div>
   );

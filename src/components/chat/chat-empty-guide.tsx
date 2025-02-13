@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GuideScenario } from "@/types/guide";
 import { MessageSquare } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface ChatEmptyGuideProps {
   scenarios: GuideScenario[];
@@ -21,9 +22,19 @@ export function ChatEmptyGuide({
       "flex-1 min-h-0 overflow-y-auto", // 整体支持滚动
       className
     )}>
-      <div className="px-4 py-6 space-y-6">
+      <motion.div 
+        className="px-4 py-6 space-y-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         {/* 头部区域 */}
-        <div className="text-center space-y-2">
+        <motion.div 
+          className="text-center space-y-2"
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2 }}
+        >
           <div className="w-14 h-14 mx-auto bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
             <MessageSquare className="w-7 h-7 text-purple-500 dark:text-purple-400" />
           </div>
@@ -31,14 +42,17 @@ export function ChatEmptyGuide({
           <p className="text-sm text-muted-foreground">
             已选择 {membersCount} 个智能体，选择以下场景快速开始
           </p>
-        </div>
+        </motion.div>
 
         {/* 场景列表 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {scenarios.map((scenario) => (
-            <div 
+          {scenarios.map((scenario, index) => (
+            <motion.div 
               key={scenario.id} 
               className="bg-card border rounded-lg p-4 space-y-4 hover:border-primary/50 transition-colors"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + index * 0.1 }}
             >
               {/* 场景标题区域 */}
               <div className="flex items-center gap-3">
@@ -69,10 +83,10 @@ export function ChatEmptyGuide({
                   </Button>
                 ))}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 } 
