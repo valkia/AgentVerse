@@ -14,12 +14,12 @@ export function SelectDisplay({
     defaultValue || (multiple ? [] : "")
   );
 
-  // 当有默认值时更新选择状态
+  // 只在组件初始化时设置默认值，而不是每次 defaultValue 变化都更新
   useEffect(() => {
-    if (defaultValue !== undefined) {
+    if (defaultValue !== undefined && !selected) {
       setSelected(defaultValue);
     }
-  }, [defaultValue]);
+  }, []); // 移除 defaultValue 依赖
 
   const handleSelect = (value: string) => {
     if (disabled) return;
@@ -36,12 +36,19 @@ export function SelectDisplay({
       onSelect?.(value); // 单选时直接触发
     }
   };
+  
 
   const handleConfirm = () => {
     if (disabled) return;
     if (!Array.isArray(selected) || selected.length === 0) return;
     onSelect?.(selected);
   };
+
+  // 如果已经有选中值且组件被禁用，说明选择已经提交
+  const isSubmitted = disabled && (
+    (multiple && Array.isArray(selected) && selected.length > 0) ||
+    (!multiple && selected)
+  );
 
   return (
     <div className="space-y-2 mt-2">
@@ -60,7 +67,7 @@ export function SelectDisplay({
         />
       ))}
       
-      {multiple && !disabled && (
+      {multiple && !isSubmitted && (
         <Button 
           className="mt-2"
           onClick={handleConfirm}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ActionDisplayProps } from "../types";
 import { DefaultAction } from "./default-action";
-import { UserSelectAction, UserSelectActionProps } from "./user-select-action";
+import { UserSelectAction, UserSelectActionProps } from "./action-user-select";
 
 export function ActionDisplay(props: ActionDisplayProps) {
   const [isExpanded, setIsExpanded] = useState(false);

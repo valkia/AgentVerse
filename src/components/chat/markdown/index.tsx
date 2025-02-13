@@ -1,6 +1,7 @@
 import { Action } from "@/components/chat/agent-action-display";
 import { Markdown } from "@/components/ui/markdown";
 import type { Root } from "mdast";
+import { useMemo } from "react";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
 import type { Plugin } from "unified";
@@ -28,42 +29,54 @@ export function DiscussionMarkdown({
   remarkPlugins = [],
   rehypePlugins = [],
 }: DiscussionMarkdownProps) {
-  // 合并插件
-  const finalRemarkPlugins = [
-    remarkGfm as Plugin<[], Root>,
-    [remarkAction, { actionResults }] as [
-      Plugin<[], Root>,
-      { actionResults: typeof actionResults }
+  // 使用 useMemo 缓存插件配置
+  const finalRemarkPlugins = useMemo(
+    () => [
+      remarkGfm as Plugin<[], Root>,
+      [remarkAction, { actionResults }] as [
+        Plugin<[], Root>,
+        { actionResults: typeof actionResults }
+      ],
+      remarkMdastToHast as Plugin<[], Root>,
+      ...remarkPlugins,
     ],
-    remarkMdastToHast as Plugin<[], Root>,
-    ...remarkPlugins,
-  ];
+    [actionResults, remarkPlugins]
+  );
 
-  const finalRehypePlugins = [
-    rehypeHighlight as unknown as Plugin<[], Node>,
-    // [rehypeRaw as unknown as Plugin<[], Node>, { passThrough: ["action"] }],
-    ...rehypePlugins,
+  const finalRehypePlugins = useMemo(
+    () => [
+      rehypeHighlight as unknown as Plugin<[], Node>,
+      ...rehypePlugins,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ] as any[];
+    ] as any[],
+    [rehypePlugins]
+  );
+
+  // 使用 useMemo 缓存组件映射
+  const finalComponents = useMemo(
+    () => ({
+      ...components,
+      action: ({ node }: { node: { properties: { value: string } } }) => {
+        if (!ActionComponent) return null;
+        try {
+          const data = JSON.parse(node.properties.value);
+          // 使用 key 来帮助 React 识别和复用组件实例
+          const actionKey = `action-${JSON.stringify(data)}`; 
+          return <ActionComponent key={actionKey} data={data} />;
+        } catch (error) {
+          console.error("Failed to parse action data:", error);
+          return null;
+        }
+      },
+    }),
+    [components, ActionComponent]
+  );
 
   return (
     <Markdown
       content={content}
       className={className}
-      components={{
-        ...components,
-        // @ts-expect-error - action 是自定义节点类型
-        action: (props) => {
-          if (!ActionComponent) return null;
-          try {
-            const data = JSON.parse(props.node.properties.value);
-            return <ActionComponent data={data} />;
-          } catch (error) {
-            console.error("Failed to parse action data:", error);
-            return null;
-          }
-        },
-      }}
+      components={finalComponents}
       remarkPlugins={finalRemarkPlugins}
       rehypePlugins={finalRehypePlugins}
     />
@@ -75,6 +88,6 @@ export type {
   ActionData,
   ActionNode,
   DiscussionMarkdownProps,
-  MarkdownActionResults
+  MarkdownActionResults,
 };
 

@@ -47,4 +47,4 @@ export { DefaultAction } from "./components/default-action";
 export { SelectDisplay } from "./components/select-display";
 export { SelectOptionItem } from "./components/select-option";
 export { StatusIcon } from "./components/status-icon";
-export { UserSelectAction } from "./components/user-select-action";
+export { UserSelectAction } from "./components/action-user-select";
