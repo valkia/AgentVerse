@@ -1,9 +1,12 @@
+import { DEFAULT_SCENARIOS } from "@/config/guide-scenarios";
+import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 import { useDiscussions } from "@/hooks/useDiscussions";
 import { cn } from "@/lib/utils";
 import { discussionControlService } from "@/services/discussion-control.service";
 import { AgentMessage } from "@/types/discussion";
 import { useRef } from "react";
-import { MessageInput } from "./message-input";
+import { ChatEmptyGuide } from "./chat-empty-guide";
+import { MessageInput, MessageInputRef } from "./message-input";
 import { MessageList, MessageListRef } from "./message-list";
 
 interface ChatAreaProps {
@@ -36,8 +39,10 @@ export function ChatArea({
   inputAreaClassName,
 }: ChatAreaProps) {
   const messageListRef = useRef<MessageListRef>(null);
+  const messageInputRef = useRef<MessageInputRef>(null);
   const isFirstMessage = messages.length === 0;
   const { currentDiscussion } = useDiscussions();
+  const { members } = useDiscussionMembers();
 
   const handleSendMessage = async (content: string, agentId: string) => {
     await onSendMessage(content, agentId);
@@ -60,22 +65,31 @@ export function ChatArea({
   }
 
   return (
-    <div
-      className={cn("flex flex-col flex-1 overflow-hidden h-full", className)}
-    >
-      <MessageList
-        ref={messageListRef}
-        messages={messages}
-        agentInfo={agentInfoGetter}
-        className={cn(defaultClasses.messageList, messageListClassName)}
-        data-testid="chat-message-list"
-      />
+    <div className={cn("flex flex-col flex-1 overflow-hidden h-full", className)}>
+      {messages.length === 0 ? (
+        <ChatEmptyGuide
+          scenarios={DEFAULT_SCENARIOS}
+          membersCount={members.length}
+          onSuggestionClick={(template) => {
+            messageInputRef.current?.setValue(template);
+          }}
+        />
+      ) : (
+        <MessageList
+          ref={messageListRef}
+          messages={messages}
+          agentInfo={agentInfoGetter}
+          className={cn(defaultClasses.messageList, messageListClassName)}
+          data-testid="chat-message-list"
+        />
+      )}
 
       <div
         className={cn(defaultClasses.inputArea, inputAreaClassName)}
         data-testid="chat-input-area"
       >
         <MessageInput
+          ref={messageInputRef}
           isFirstMessage={isFirstMessage}
           onSendMessage={handleSendMessage}
           className={defaultClasses.inputWrapper}

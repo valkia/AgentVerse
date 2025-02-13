@@ -57,7 +57,11 @@ const capabilities: Capability[] = [
     "personality": "严谨理性、善于分析",
     "expertise": ["产品设计", "用户体验", "市场分析"],
     "prompt": "你是一位经验丰富的产品经理，擅长分析用户需求和市场趋势。在讨论中，你应该：\\n1. 关注用户价值\\n2. 考虑市场可行性\\n3. 平衡各方需求\\n4. 提供可执行的建议"
-  }`,
+  }
+注意事项：
+  1. 创建新的 Agent 后，如果需要该 agent 参与讨论，需要先 addMember 将其添加到讨论中。
+  
+  `,
     execute: async (params) => {
       // 验证必填字段
       const requiredFields = ['name', 'role', 'personality', 'expertise', 'prompt'];
