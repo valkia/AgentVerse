@@ -1,9 +1,12 @@
-import { AddAgentDialog } from "@/components/agent/add-agent-dialog";
-import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Moon, Search, Settings, Sun, Users } from "lucide-react";
 import { useState } from "react";
+import React from "react";
+
+// 动态导入对话框组件
+const SettingsDialog = React.lazy(() => import("@/components/settings/settings-dialog").then(module => ({ default: module.SettingsDialog })));
+const AddAgentDialog = React.lazy(() => import("@/components/agent/add-agent-dialog").then(module => ({ default: module.AddAgentDialog })));
 
 interface HeaderProps {
   isDarkMode: boolean;
@@ -83,14 +86,16 @@ export function Header({
         </div>
       </header>
 
-      <AddAgentDialog
-        isOpen={showAgentManager}
-        onOpenChange={setShowAgentManager}
-      />
-      <SettingsDialog
-        open={showSettings}
-        onOpenChange={setShowSettings}
-      />
+      <React.Suspense>
+        <AddAgentDialog
+          isOpen={showAgentManager}
+          onOpenChange={setShowAgentManager}
+        />
+        <SettingsDialog
+          open={showSettings}
+          onOpenChange={setShowSettings}
+        />
+      </React.Suspense>
     </>
   );
 }

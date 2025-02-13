@@ -1,13 +1,10 @@
-import { AddAgentDialog } from "@/components/agent/add-agent-dialog";
 import { ChatArea } from "@/components/chat/chat-area";
 import { DiscussionController } from "@/components/discussion/control/discussion-controller";
 import { DiscussionList } from "@/components/discussion/discussion-list";
 import { MemberList } from "@/components/discussion/member/member-list";
-import { MobileMemberDrawer } from "@/components/discussion/member/mobile-member-drawer";
 import { Header } from "@/components/layout/header";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { ResponsiveContainer } from "@/components/layout/responsive-container";
-import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { useBreakpointContext } from "@/contexts/breakpoint-context";
 import { useAgents } from "@/hooks/useAgents";
 import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
@@ -19,6 +16,12 @@ import { Discussion, NormalMessage } from "@/types/discussion";
 import { useEffect, useState } from "react";
 import { useBeanState } from "rx-nested-bean";
 import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
+import React from "react";
+
+// 动态导入非首屏组件
+const SettingsDialog = React.lazy(() => import("@/components/settings/settings-dialog").then(module => ({ default: module.SettingsDialog })));
+const AddAgentDialog = React.lazy(() => import("@/components/agent/add-agent-dialog").then(module => ({ default: module.AddAgentDialog })));
+const MobileMemberDrawer = React.lazy(() => import("@/components/discussion/member/mobile-member-drawer").then(module => ({ default: module.MobileMemberDrawer })));
 
 export function App() {
   const { isDarkMode, toggleDarkMode, rootClassName } = useTheme();
@@ -165,15 +168,17 @@ export function App() {
       </div>
 
       {/* 移动端成员管理抽屉 */}
-      <MobileMemberDrawer
-        open={showMobileMembers}
-        onOpenChange={setShowMobileMembers}
-      />
-      <AddAgentDialog
-        isOpen={showMobileAgentsDialog}
-        onOpenChange={setShowMobileAgentsDialog}
-      />
-      <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
+      <React.Suspense>
+        <MobileMemberDrawer
+          open={showMobileMembers}
+          onOpenChange={setShowMobileMembers}
+        />
+        <AddAgentDialog
+          isOpen={showMobileAgentsDialog}
+          onOpenChange={setShowMobileAgentsDialog}
+        />
+        <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
+      </React.Suspense>
     </div>
   );
 }
