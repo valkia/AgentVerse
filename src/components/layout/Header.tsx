@@ -29,19 +29,27 @@ export function Header({
     <>
       <header
         className={cn(
-          "flex-none py-3 px-4 border-b dark:border-gray-800",
+          "flex-none py-3 px-4 border-b dark:border-gray-800 backdrop-blur-sm bg-background/80 sticky top-0 z-50 transition-all duration-200",
           className
         )}
       >
         <div className="container mx-auto max-w-[1920px] flex items-center justify-between">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text">
-            AgentVerse - 多Agent讨论空间
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="relative font-bold text-2xl">
+              <span className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-500 to-purple-600 bg-[200%_auto] animate-gradient-x bg-clip-text text-transparent">
+                AgentVerse
+              </span>
+              <span className="invisible">AgentVerse</span>
+              <span className="text-base font-medium text-muted-foreground ml-2">
+                多Agent讨论空间
+              </span>
+            </h1>
+          </div>
 
           <div className="flex items-center gap-2">
             <span
               className={cn(
-                "text-sm px-2 py-1 rounded-md",
+                "text-sm px-2.5 py-1.5 rounded-md transition-colors duration-200",
                 status === "paused"
                   ? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                   : "bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400"
@@ -49,36 +57,40 @@ export function Header({
             >
               {statusText}
             </span>
-            <div className="flex items-center gap-1">
-              <Button variant="secondary" size="icon" className="h-9 w-9">
-                <Search className="h-4 w-4" />
+            <div className="flex items-center gap-1.5">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-9 w-9 hover:bg-muted/80"
+              >
+                <Search className="h-[1.2rem] w-[1.2rem] text-muted-foreground/70" />
               </Button>
               <Button
-                variant="secondary"
+                variant="ghost"
                 size="icon"
-                className="h-9 w-9"
+                className="h-9 w-9 hover:bg-muted/80"
                 onClick={() => setShowSettings(true)}
               >
-                <Settings className="h-4 w-4" />
+                <Settings className="h-[1.2rem] w-[1.2rem] text-muted-foreground/70" />
               </Button>
               <Button
-                variant="secondary"
+                variant="ghost"
                 size="icon"
                 onClick={() => setShowAgentManager(true)}
-                className="h-9 w-9"
+                className="h-9 w-9 hover:bg-muted/80"
               >
-                <Users className="h-4 w-4" />
+                <Users className="h-[1.2rem] w-[1.2rem] text-muted-foreground/70" />
               </Button>
               <Button
-                variant="secondary"
+                variant="ghost"
                 size="icon"
                 onClick={toggleDarkMode}
-                className="h-9 w-9"
+                className="h-9 w-9 hover:bg-muted/80"
               >
                 {isDarkMode ? (
-                  <Sun className="h-4 w-4" />
+                  <Sun className="h-[1.2rem] w-[1.2rem] text-muted-foreground/70" />
                 ) : (
-                  <Moon className="h-4 w-4" />
+                  <Moon className="h-[1.2rem] w-[1.2rem] text-muted-foreground/70" />
                 )}
               </Button>
             </div>
