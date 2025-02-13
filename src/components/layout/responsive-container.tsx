@@ -1,6 +1,6 @@
-import { ReactNode } from "react";
-import { useBreakpoint } from "@/hooks/useBreakpoint";
+import { useBreakpointContext } from "@/contexts/breakpoint-context";
 import { cn } from "@/lib/utils";
+import { ReactNode } from "react";
 
 interface ResponsiveContainerProps {
   children?: ReactNode;
@@ -16,9 +16,9 @@ export function ResponsiveContainer({
   sidebarContent,
   mainContent,
   showMobileSidebar = false,
-  onMobileSidebarChange
+  onMobileSidebarChange,
 }: ResponsiveContainerProps) {
-  const { isMobile } = useBreakpoint();
+  const { isMobile } = useBreakpointContext();
 
   return (
     <div className={cn("h-full w-full overflow-hidden flex", className)}>
@@ -29,7 +29,9 @@ export function ResponsiveContainer({
               "w-[280px] h-full border-r border-border bg-card",
               "fixed lg:relative inset-y-0 left-0 z-50",
               "transform transition-transform duration-300 ease-in-out",
-              showMobileSidebar ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+              showMobileSidebar
+                ? "translate-x-0"
+                : "-translate-x-full lg:translate-x-0"
             )}
           >
             {sidebarContent}
@@ -47,4 +49,4 @@ export function ResponsiveContainer({
       </div>
     </div>
   );
-} 
+}

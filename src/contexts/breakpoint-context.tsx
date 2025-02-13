@@ -1,6 +1,6 @@
-import { createContext, ReactNode, useContext, useMemo } from 'react';
-import { BREAKPOINTS, type Breakpoint } from '@/constants/breakpoints';
-import { useWindowSize } from '@/hooks/useWindowSize';
+import { BREAKPOINTS, type Breakpoint } from "@/constants/breakpoints";
+import { useWindowSize } from "@/hooks/useWindowSize";
+import { createContext, ReactNode, useContext, useMemo } from "react";
 
 interface BreakpointContextValue {
   breakpoint: Breakpoint;
@@ -18,15 +18,16 @@ export function BreakpointProvider({ children }: { children: ReactNode }) {
   const { width } = useWindowSize();
 
   const value = useMemo((): BreakpointContextValue => {
-    const breakpoint: Breakpoint = width >= BREAKPOINTS['2xl']
-      ? '2xl'
-      : width >= BREAKPOINTS.xl
-      ? 'xl'
-      : width >= BREAKPOINTS.lg
-      ? 'lg'
-      : width >= BREAKPOINTS.md
-      ? 'md'
-      : 'sm';
+    const breakpoint: Breakpoint =
+      width >= BREAKPOINTS["2xl"]
+        ? "2xl"
+        : width >= BREAKPOINTS.xl
+        ? "xl"
+        : width >= BREAKPOINTS.lg
+        ? "lg"
+        : width >= BREAKPOINTS.md
+        ? "md"
+        : "sm";
 
     return {
       breakpoint,
@@ -46,10 +47,12 @@ export function BreakpointProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useBreakpoint() {
+export function useBreakpointContext() {
   const context = useContext(BreakpointContext);
   if (!context) {
-    throw new Error('useBreakpoint must be used within a BreakpointProvider');
+    throw new Error(
+      "useBreakpointContext must be used within a BreakpointProvider"
+    );
   }
   return context;
-} 
+}

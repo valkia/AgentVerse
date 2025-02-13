@@ -7,8 +7,12 @@ import { AppLoading } from "./components/app/app-loading.tsx";
 import "./index.css";
 import { discussionControlService } from "@/services/discussion-control.service.ts";
 import { discussionMemberService } from "@/services/discussion-member.service.ts";
-import { discussionMembersResource, discussionsResource } from "@/resources/index.ts";
+import {
+  discussionMembersResource,
+  discussionsResource,
+} from "@/resources/index.ts";
 import "./styles/theme.css";
+import { BreakpointProvider } from "@/contexts/breakpoint-context.tsx";
 
 (window as any).discussionService = discussionService;
 (window as any).discussionControlService = discussionControlService;
@@ -19,9 +23,9 @@ import "./styles/theme.css";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Suspense fallback={<AppLoading />}>
-      <App />
+      <BreakpointProvider>
+        <App />
+      </BreakpointProvider>
     </Suspense>
   </React.StrictMode>
 );
-
-

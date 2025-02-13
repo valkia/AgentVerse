@@ -202,7 +202,7 @@ export function DiscussionSetupPage({ className }: DiscussionSetupPageProps) {
           {/* 底部按钮 */}
           <div className="text-center">
             <Button
-              variant="link"
+              variant="ghost"
               size="sm"
               className="text-xs text-muted-foreground h-7"
               onClick={handleSkip}

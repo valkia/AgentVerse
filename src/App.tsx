@@ -7,6 +7,8 @@ import { MobileMemberDrawer } from "@/components/discussion/member/mobile-member
 import { Header } from "@/components/layout/header";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { ResponsiveContainer } from "@/components/layout/responsive-container";
+import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { useBreakpointContext } from "@/contexts/breakpoint-context";
 import { useAgents } from "@/hooks/useAgents";
 import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 import { useMessages } from "@/hooks/useMessages";
@@ -17,8 +19,6 @@ import { Discussion, NormalMessage } from "@/types/discussion";
 import { useEffect, useState } from "react";
 import { useBeanState } from "rx-nested-bean";
 import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
-import { SettingsDialog } from "@/components/settings/settings-dialog";
-import { BreakpointProvider } from "@/contexts/breakpoint-context";
 
 export function App() {
   const { isDarkMode, toggleDarkMode, rootClassName } = useTheme();
@@ -30,6 +30,7 @@ export function App() {
   const [showMobileMembers, setShowMobileMembers] = useState(false);
   const [showMobileAgentsDialog, setShowMobileAgentsDialog] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const { isDesktop } = useBreakpointContext();
   const { data: currentDiscussionId } = useBeanState(
     discussionControlService.currentDiscussionIdBean
   );
@@ -71,10 +72,16 @@ export function App() {
     discussionControlService.setMessages(messages);
   }, [messages]);
 
+  const handleSelectDiscussion = () => {
+    if (!isDesktop) {
+      setShowMobileSidebar(false);
+    }
+  };
+
   // 侧边栏内容
   const sidebarContent = (
     <div className="h-full bg-card">
-        <DiscussionList />
+      <DiscussionList onSelectDiscussion={handleSelectDiscussion} />
     </div>
   );
 
@@ -139,39 +146,34 @@ export function App() {
   );
 
   return (
-    <BreakpointProvider>
-      <div className={cn(rootClassName)} data-testid="app-root">
-        {/* PC端顶部Header */}
-        <Header
-          isDarkMode={isDarkMode}
-          toggleDarkMode={toggleDarkMode}
-          status={status}
-          className="hidden lg:flex"
-        />
+    <div className={cn(rootClassName)} data-testid="app-root">
+      {/* PC端顶部Header */}
+      <Header
+        isDarkMode={isDarkMode}
+        toggleDarkMode={toggleDarkMode}
+        status={status}
+        className="hidden lg:flex"
+      />
 
-        <div className="flex-1 min-h-0">
-          <ResponsiveContainer
-            sidebarContent={sidebarContent}
-            mainContent={mainContent}
-            showMobileSidebar={showMobileSidebar}
-            onMobileSidebarChange={setShowMobileSidebar}
-          />
-        </div>
-
-        {/* 移动端成员管理抽屉 */}
-        <MobileMemberDrawer
-          open={showMobileMembers}
-          onOpenChange={setShowMobileMembers}
-        />
-        <AddAgentDialog
-          isOpen={showMobileAgentsDialog}
-          onOpenChange={setShowMobileAgentsDialog}
-        />
-        <SettingsDialog
-          open={showSettings}
-          onOpenChange={setShowSettings}
+      <div className="flex-1 min-h-0">
+        <ResponsiveContainer
+          sidebarContent={sidebarContent}
+          mainContent={mainContent}
+          showMobileSidebar={showMobileSidebar}
+          onMobileSidebarChange={setShowMobileSidebar}
         />
       </div>
-    </BreakpointProvider>
+
+      {/* 移动端成员管理抽屉 */}
+      <MobileMemberDrawer
+        open={showMobileMembers}
+        onOpenChange={setShowMobileMembers}
+      />
+      <AddAgentDialog
+        isOpen={showMobileAgentsDialog}
+        onOpenChange={setShowMobileAgentsDialog}
+      />
+      <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
+    </div>
   );
 }

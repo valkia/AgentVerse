@@ -32,7 +32,7 @@ export function Header({
       >
         <div className="container mx-auto max-w-[1920px] flex items-center justify-between">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text">
-            AgentVerse - 多Agent协作
+            AgentVerse - 多Agent讨论空间
           </h1>
 
           <div className="flex items-center gap-2">

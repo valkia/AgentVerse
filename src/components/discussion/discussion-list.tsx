@@ -1,13 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAgents } from "@/hooks/useAgents";
-import { useDiscussions } from "@/hooks/useDiscussions";
-import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
-import { cn } from "@/lib/utils";
-import { Discussion } from "@/types/discussion";
-import { DiscussionMember } from "@/types/discussion-member";
-import { Loader2, PlusCircle, MoreVertical, Pencil, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,11 +7,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { useAgents } from "@/hooks/useAgents";
+import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
+import { useDiscussions } from "@/hooks/useDiscussions";
+import { cn } from "@/lib/utils";
+import { Discussion } from "@/types/discussion";
+import { DiscussionMember } from "@/types/discussion-member";
+import {
+  Loader2,
+  MoreVertical,
+  Pencil,
+  PlusCircle,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface DiscussionListProps {
   className?: string;
   headerClassName?: string;
   listClassName?: string;
+  onSelectDiscussion?: (discussionId: string) => void;
 }
 
 interface DiscussionItemProps {
@@ -38,14 +45,20 @@ interface DiscussionItemTitleProps {
   onEditEnd: () => void;
 }
 
-function DiscussionItemTitle({ title, createdAt, isEditing, onTitleChange, onEditEnd }: DiscussionItemTitleProps) {
+function DiscussionItemTitle({
+  title,
+  createdAt,
+  isEditing,
+  onTitleChange,
+  onEditEnd,
+}: DiscussionItemTitleProps) {
   const [editingTitle, setEditingTitle] = useState(title);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       onTitleChange(editingTitle);
       onEditEnd();
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       setEditingTitle(title);
       onEditEnd();
     }
@@ -73,18 +86,24 @@ function DiscussionItemTitle({ title, createdAt, isEditing, onTitleChange, onEdi
     <div className="flex items-center gap-2">
       <h3 className="font-medium">{title}</h3>
       <time className="text-xs text-muted-foreground">
-        {new Date(createdAt).toLocaleString('zh-CN', { 
-          month: 'numeric',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: 'numeric'
+        {new Date(createdAt).toLocaleString("zh-CN", {
+          month: "numeric",
+          day: "numeric",
+          hour: "numeric",
+          minute: "numeric",
         })}
       </time>
     </div>
   );
 }
 
-function DiscussionItem({ discussion, isActive, onClick, onRename, onDelete }: DiscussionItemProps) {
+function DiscussionItem({
+  discussion,
+  isActive,
+  onClick,
+  onRename,
+  onDelete,
+}: DiscussionItemProps) {
   const { agents, getAgentName, getAgentAvatar } = useAgents();
   const { getMembersForDiscussion } = useDiscussionMembers();
   const [members, setMembers] = useState<DiscussionMember[]>([]);
@@ -96,7 +115,7 @@ function DiscussionItem({ discussion, isActive, onClick, onRename, onDelete }: D
 
   const handleClick = (e: React.MouseEvent) => {
     // 如果点击的是下拉菜单或输入框，不触发选中
-    if ((e.target as HTMLElement).closest('.discussion-actions, input')) {
+    if ((e.target as HTMLElement).closest(".discussion-actions, input")) {
       return;
     }
     onClick();
@@ -114,7 +133,7 @@ function DiscussionItem({ discussion, isActive, onClick, onRename, onDelete }: D
     >
       <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <DiscussionItemTitle 
+          <DiscussionItemTitle
             title={discussion.title}
             createdAt={discussion.createdAt}
             isEditing={isEditing}
@@ -153,7 +172,7 @@ function DiscussionItem({ discussion, isActive, onClick, onRename, onDelete }: D
         </p>
         <div className="flex items-center gap-1">
           {members.map((member) => {
-            const agent = agents.find(a => a.id === member.agentId);
+            const agent = agents.find((a) => a.id === member.agentId);
             if (!agent) return null;
             return (
               <img
@@ -174,7 +193,8 @@ function DiscussionItem({ discussion, isActive, onClick, onRename, onDelete }: D
 export function DiscussionList({
   className,
   headerClassName,
-  listClassName
+  listClassName,
+  onSelectDiscussion,
 }: DiscussionListProps) {
   const { agents } = useAgents();
   const {
@@ -184,7 +204,7 @@ export function DiscussionList({
     createDiscussion,
     selectDiscussion,
     updateDiscussion,
-    deleteDiscussion
+    deleteDiscussion,
   } = useDiscussions();
 
   const handleCreateDiscussion = async () => {
@@ -195,8 +215,15 @@ export function DiscussionList({
     }
   };
 
+  const handleSelectDiscussion = (discussionId: string) => {
+    selectDiscussion(discussionId);
+    onSelectDiscussion?.(discussionId);
+  };
+
   return (
-    <div className={cn("flex flex-col flex-1 overflow-hidden h-full", className)}>
+    <div
+      className={cn("flex flex-col flex-1 overflow-hidden h-full", className)}
+    >
       <header
         className={cn(
           "flex-none flex justify-between items-center mb-3 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 z-10 py-2 px-4 pt-4",
@@ -221,10 +248,7 @@ export function DiscussionList({
       </header>
 
       <div
-        className={cn(
-          "flex-1 min-h-0 overflow-y-auto p-4 pt-0",
-          listClassName
-        )}
+        className={cn("flex-1 min-h-0 overflow-y-auto p-4 pt-0", listClassName)}
       >
         <div className="space-y-2 pb-4">
           {discussions.map((discussion) => (
@@ -232,7 +256,7 @@ export function DiscussionList({
               key={discussion.id}
               discussion={discussion}
               isActive={discussion.id === currentDiscussion?.id}
-              onClick={() => selectDiscussion(discussion.id)}
+              onClick={() => handleSelectDiscussion(discussion.id)}
               onRename={(title) => updateDiscussion(discussion.id, { title })}
               onDelete={() => deleteDiscussion(discussion.id)}
             />
