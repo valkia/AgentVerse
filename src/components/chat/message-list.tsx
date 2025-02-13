@@ -33,28 +33,30 @@ function MessageItem({ message, agentInfo }: MessageItemProps) {
   const { getName, getAvatar } = agentInfo;
 
   return (
-    <div className="group animate-fadeIn">
-      <div className="flex items-start gap-3">
-        <Avatar className="w-8 h-8 border border-transparent group-hover:border-purple-500/50 transition-colors">
+    <div className="group animate-fadeIn hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all duration-200">
+      <div className="flex items-start gap-3 max-w-3xl mx-auto px-4 py-2">
+        <Avatar className="w-8 h-8 shrink-0 ring-2 ring-transparent group-hover:ring-purple-500/30 transition-all duration-200">
           <AvatarImage src={getAvatar(message.agentId)} />
           <AvatarFallback className="bg-gradient-to-br from-purple-400 to-blue-400 text-white text-xs">
             {getName(message.agentId)[0]}
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-2">
-            <div className="font-medium text-sm dark:text-gray-200">
+            <div className="font-medium text-sm text-gray-900 dark:text-gray-100">
               {getName(message.agentId)}
             </div>
             <time className="text-xs text-gray-500 dark:text-gray-400">
               {new Date(message.timestamp).toLocaleTimeString()}
             </time>
           </div>
-          <div className="mt-1 text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800/50 px-3 py-2 rounded-lg break-words">
-            <MessageMarkdownContent
-              content={message.content}
-              actionResults={message.actionResults}
-            />
+          <div className="relative">
+            <div className="text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 group-hover:border-gray-300 dark:group-hover:border-gray-600 px-4 py-3 rounded-xl break-words shadow-sm group-hover:shadow-md transition-all duration-200">
+              <MessageMarkdownContent
+                content={message.content}
+                actionResults={message.actionResults}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -151,13 +153,13 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
         <div className="absolute inset-0">
           <ScrollableLayout
             ref={scrollableLayoutRef}
-            className={cn("h-full", className)}
+            className={cn("h-full overflow-x-hidden", className)}
             initialAlignment="bottom"
             autoScrollMode="smart"
             onScroll={handleScroll}
           >
             <div className="py-4">
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {reorganizedMessages.map((message) => (
                   <MessageItem
                     key={message.id}
