@@ -15,18 +15,14 @@ interface MessageItemProps {
 }
 
 // 移动端头像和用户信息组件
-function MessageHeader({ message, agentInfo, isUserMessage }: { 
+function MessageHeader({ message, agentInfo }: { 
   message: MessageWithResults;
   agentInfo: MessageItemProps['agentInfo'];
-  isUserMessage: boolean;
 }) {
   const { getName, getAvatar } = agentInfo;
   
   return (
-    <div className={cn(
-      "sm:hidden flex items-center gap-2 mb-2",
-      isUserMessage ? "justify-end" : "justify-start"
-    )}>
+    <div className="sm:hidden flex items-center gap-2 mb-2">
       <Avatar className="w-5 h-5 shrink-0">
         <AvatarImage src={getAvatar(message.agentId)} />
         <AvatarFallback className="bg-gradient-to-br from-purple-400 to-blue-400 text-white text-[10px]">
@@ -96,7 +92,7 @@ export function MessageItem({ message, agentInfo }: MessageItemProps) {
   return (
     <div className="group animate-fadeIn hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all duration-200">
       <div className="px-2 sm:px-4 py-2 max-w-full sm:max-w-3xl mx-auto">
-        <MessageHeader message={message} agentInfo={agentInfo} isUserMessage={isUserMessage} />
+        <MessageHeader message={message} agentInfo={agentInfo} />
         <DesktopMessageHeader message={message} agentInfo={agentInfo} />
         
         {/* 消息内容部分 */}
@@ -110,7 +106,8 @@ export function MessageItem({ message, agentInfo }: MessageItemProps) {
             "sm:rounded-xl sm:break-words",
             "sm:shadow-sm sm:group-hover:shadow-md",
             "transition-all duration-200",
-            "sm:ml-11"
+            "sm:ml-11",
+            isUserMessage && "bg-blue-50/50 dark:bg-blue-900/10"
           )}>
             <div className={cn("space-y-2", isUserMessage && "pr-6")}>
               <MessageMarkdownContent
