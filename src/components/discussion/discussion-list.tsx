@@ -11,6 +11,9 @@ import { useAgents } from "@/hooks/useAgents";
 import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 import { useDiscussions } from "@/hooks/useDiscussions";
 import { cn } from "@/lib/utils";
+import { discussionsResource, messagesResource } from "@/resources";
+import { DEFAULT_DISCUSSION_TITLE } from "@/services/common.util";
+import { filterNormalMessages } from "@/services/message.util";
 import { Discussion } from "@/types/discussion";
 import { DiscussionMember } from "@/types/discussion-member";
 import {
@@ -39,7 +42,6 @@ interface DiscussionItemProps {
 
 interface DiscussionItemTitleProps {
   title: string;
-  createdAt: Date;
   isEditing: boolean;
   onTitleChange: (title: string) => void;
   onEditEnd: () => void;
@@ -47,7 +49,6 @@ interface DiscussionItemTitleProps {
 
 function DiscussionItemTitle({
   title,
-  createdAt,
   isEditing,
   onTitleChange,
   onEditEnd,
@@ -76,7 +77,7 @@ function DiscussionItemTitle({
         onChange={(e) => setEditingTitle(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
-        className="h-6 text-sm px-1.5 w-[200px]"
+        className="h-6 text-xs px-1.5 w-[200px]"
         autoFocus
       />
     );
@@ -84,15 +85,7 @@ function DiscussionItemTitle({
 
   return (
     <div className="flex items-center gap-2">
-      <h3 className="font-medium">{title}</h3>
-      <time className="text-xs text-muted-foreground">
-        {new Date(createdAt).toLocaleString("zh-CN", {
-          month: "numeric",
-          day: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        })}
-      </time>
+      <h3 className="text-sm font-medium truncate">{title}</h3>
     </div>
   );
 }
@@ -131,24 +124,25 @@ function DiscussionItem({
       data-testid="discussion-item"
       data-discussion-id={discussion.id}
     >
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <DiscussionItemTitle
-            title={discussion.title}
-            createdAt={discussion.createdAt}
-            isEditing={isEditing}
-            onTitleChange={onRename}
-            onEditEnd={() => setIsEditing(false)}
-          />
+      <div className="space-y-0.5">
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex-1 min-w-0">
+            <DiscussionItemTitle
+              title={discussion.title}
+              isEditing={isEditing}
+              onTitleChange={onRename}
+              onEditEnd={() => setIsEditing(false)}
+            />
+          </div>
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="secondary"
                   size="icon"
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100 discussion-actions"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100 discussion-actions"
                 >
-                  <MoreVertical className="h-4 w-4" />
+                  <MoreVertical className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -167,11 +161,18 @@ function DiscussionItem({
             </DropdownMenu>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground line-clamp-1">
-          {discussion.topic || "暂无主题"}
+        <p className="text-xs text-muted-foreground line-clamp-1">
+          <time className="text-xs text-muted-foreground">
+            {new Date(discussion.createdAt).toLocaleString("zh-CN", {
+              month: "numeric",
+              day: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+            })}
+          </time>
         </p>
-        <div className="flex items-center gap-1">
-          {members.map((member) => {
+        <div className="flex items-center gap-1 overflow-hidden">
+          {members.slice(0, 4).map((member) => {
             const agent = agents.find((a) => a.id === member.agentId);
             if (!agent) return null;
             return (
@@ -179,11 +180,16 @@ function DiscussionItem({
                 key={member.id}
                 src={getAgentAvatar(agent.id)}
                 alt={getAgentName(agent.id)}
-                className="w-6 h-6 rounded-full"
+                className="w-6 h-6 rounded-full shrink-0"
                 title={getAgentName(agent.id)}
               />
             );
           })}
+          {members.length > 4 && (
+            <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground shrink-0">
+              +{members.length - 4}
+            </div>
+          )}
         </div>
       </div>
     </Card>
@@ -214,6 +220,34 @@ export function DiscussionList({
       selectDiscussion(discussion.id);
     }
   };
+
+  useEffect(() => {
+    // 监听消息变化并更新标题
+    return messagesResource.current.subscribe(async (state) => {
+      if (state.data && !state.isValidating && !state.isLoading) {
+        const messages = filterNormalMessages(state.data);
+        if (messages.length) {
+          const discussion = discussionsResource.current.getState().data;
+          if (discussion && discussion.title === DEFAULT_DISCUSSION_TITLE) {
+            try {
+              // 使用 AIService 生成标题
+              updateDiscussion(messages[0].discussionId, {
+                title: messages[0].content.slice(0, 50),
+              });
+              // const newTitle = await aiService.generateDiscussionTitle(
+              //   messages
+              // );
+              // if (newTitle && newTitle !== discussion.title) {
+              //   updateDiscussion(discussion.id, { title: newTitle });
+              // }
+            } catch (error) {
+              console.error("Failed to generate discussion title:", error);
+            }
+          }
+        }
+      }
+    });
+  }, []);
 
   const handleSelectDiscussion = (discussionId: string) => {
     selectDiscussion(discussionId);

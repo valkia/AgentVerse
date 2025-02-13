@@ -1,18 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { TooltipProvider } from "@/components/ui/tooltip.tsx";
+import { BreakpointProvider } from "@/contexts/breakpoint-context.tsx";
+import {
+  discussionMembersResource,
+  discussionsResource,
+} from "@/resources/index.ts";
+import { discussionControlService } from "@/services/discussion-control.service.ts";
+import { discussionMemberService } from "@/services/discussion-member.service.ts";
 import { discussionService } from "@/services/discussion.service.ts";
 import React, { Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App.tsx";
 import { AppLoading } from "./components/app/app-loading.tsx";
 import "./index.css";
-import { discussionControlService } from "@/services/discussion-control.service.ts";
-import { discussionMemberService } from "@/services/discussion-member.service.ts";
-import {
-  discussionMembersResource,
-  discussionsResource,
-} from "@/resources/index.ts";
 import "./styles/theme.css";
-import { BreakpointProvider } from "@/contexts/breakpoint-context.tsx";
 
 (window as any).discussionService = discussionService;
 (window as any).discussionControlService = discussionControlService;
@@ -23,9 +24,11 @@ import { BreakpointProvider } from "@/contexts/breakpoint-context.tsx";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Suspense fallback={<AppLoading />}>
-      <BreakpointProvider>
-        <App />
-      </BreakpointProvider>
+      <TooltipProvider>
+        <BreakpointProvider>
+          <App />
+        </BreakpointProvider>
+      </TooltipProvider>
     </Suspense>
   </React.StrictMode>
 );
