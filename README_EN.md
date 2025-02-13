@@ -89,10 +89,10 @@ pnpm dev
 ## 🗺️ Development Plan
 
 Near-term:
-- [ ] Theme switching (light/dark)
-- [ ] Mobile responsiveness
-- [ ] Add auto termination mechanism
-- [ ] Support custom large model API_KEY
+- [x] Theme switching (light/dark)
+- [x] Mobile responsiveness
+- [x] Add auto termination mechanism
+- [x] Support custom large model API_KEY
 - [ ] Multi-language support
 
 ## 📄 License
