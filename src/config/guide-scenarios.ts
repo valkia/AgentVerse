@@ -62,6 +62,26 @@ export const DEFAULT_SCENARIOS: GuideScenario[] = [
     ]
   },
   {
+    id: "thinking-exploration",
+    icon: "🧠",
+    title: "思维探索",
+    description: "探索不同思维方式，激发认知突破",
+    suggestions: [
+      {
+        id: "thinking-patterns",
+        title: "思维模式碰撞",
+        description: "多种思维方式的交互探讨",
+        template: "让我们用不同的思维方式探讨\"如何提升创造力\"这个话题。请系统思考者分析整体框架，逆向思维者提出反常观点，横向思维者联系跨领域启发，辩证思维者探讨矛盾统一。"
+      },
+      {
+        id: "problem-solving",
+        title: "问题解决工作坊",
+        description: "运用多元思维方法解决问题",
+        template: "我们来探讨\"如何减少城市交通拥堵\"这个问题。请系统分析师建立问题框架，创新思维者提出突破性方案，批判性思维者评估可行性，整合性思维者寻找最优解。"
+      }
+    ]
+  },
+  {
     id: "creative-collaboration",
     icon: "✨",
     title: "创意协作",
