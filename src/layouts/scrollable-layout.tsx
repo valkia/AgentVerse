@@ -1,22 +1,21 @@
-import {
-  ReactNode,
-  useRef,
-  useEffect,
-  forwardRef,
-  useImperativeHandle,
-} from "react";
-import { cn } from "@/lib/utils";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
+import { cn } from "@/lib/utils";
+import {
+  forwardRef,
+  ReactNode,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from "react";
 
 interface ScrollableLayoutProps {
   children: ReactNode;
   className?: string;
   initialAlignment?: "top" | "bottom";
   onScroll?: (scrollTop: number, maxScroll: number) => void;
-  autoScrollMode?: "always" | "smart" | "none"; // 自动滚动模式
-  bottomThreshold?: number; // 判定为"接近底部"的阈值
+  pinThreshold?: number;
+  unpinThreshold?: number;
 }
-
 
 export interface ScrollableLayoutRef {
   scrollToBottom: () => void;
@@ -31,29 +30,27 @@ export const ScrollableLayout = forwardRef<
     className,
     initialAlignment = "top",
     onScroll,
-    autoScrollMode = "smart", // 默认使用智能模式
-    bottomThreshold = 30,
+    pinThreshold,
+    unpinThreshold,
   },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollToBottom } = useAutoScroll(containerRef, children, {
-    autoScrollMode,
-    bottomThreshold,
+    pinThreshold,
+    unpinThreshold,
   });
 
-  useImperativeHandle(ref, () => {
-    return {
-      scrollToBottom,
-    };
-  });
+  useImperativeHandle(ref, () => ({
+    scrollToBottom,
+  }));
 
   // 初始化滚动位置
   useEffect(() => {
     if (initialAlignment === "bottom") {
       scrollToBottom(true);
     }
-  }, [initialAlignment]);
+  }, [initialAlignment, scrollToBottom]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
@@ -66,9 +63,8 @@ export const ScrollableLayout = forwardRef<
   return (
     <div
       ref={containerRef}
-      className={cn("overflow-y-auto", className)}
+      className={cn("overflow-y-auto relative", className)}
       onScroll={handleScroll}
-      style={{ scrollBehavior: "smooth" }}
     >
       {children}
     </div>

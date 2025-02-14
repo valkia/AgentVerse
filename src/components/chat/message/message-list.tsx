@@ -98,7 +98,9 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
             ref={scrollableLayoutRef}
             className={cn("h-full overflow-x-hidden", className)}
             initialAlignment="bottom"
-            autoScrollMode="smart"
+            // autoScrollMode="smart"
+            unpinThreshold={2}
+            pinThreshold={30}
             onScroll={handleScroll}
           >
             <div className="py-4" ref={messagesContainerRef}>
