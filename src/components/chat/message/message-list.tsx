@@ -99,7 +99,7 @@ export const MessageList = forwardRef<MessageListRef, MessageListProps>(
             className={cn("h-full overflow-x-hidden", className)}
             initialAlignment="bottom"
             // autoScrollMode="smart"
-            unpinThreshold={2}
+            unpinThreshold={1}
             pinThreshold={30}
             onScroll={handleScroll}
           >
