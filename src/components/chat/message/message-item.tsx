@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useCopy } from "@/hooks/use-copy";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { MessageWithResults } from "@/types/discussion";
@@ -15,12 +16,15 @@ interface MessageItemProps {
 }
 
 // 移动端头像和用户信息组件
-function MessageHeader({ message, agentInfo }: { 
+function MessageHeader({
+  message,
+  agentInfo,
+}: {
   message: MessageWithResults;
-  agentInfo: MessageItemProps['agentInfo'];
+  agentInfo: MessageItemProps["agentInfo"];
 }) {
   const { getName, getAvatar } = agentInfo;
-  
+
   return (
     <div className="sm:hidden flex items-center gap-2 mb-2">
       <Avatar className="w-5 h-5 shrink-0">
@@ -40,12 +44,15 @@ function MessageHeader({ message, agentInfo }: {
 }
 
 // 桌面端头像和用户信息组件
-function DesktopMessageHeader({ message, agentInfo }: {
+function DesktopMessageHeader({
+  message,
+  agentInfo,
+}: {
   message: MessageWithResults;
-  agentInfo: MessageItemProps['agentInfo'];
+  agentInfo: MessageItemProps["agentInfo"];
 }) {
   const { getName, getAvatar } = agentInfo;
-  
+
   return (
     <div className="hidden sm:flex items-start gap-3">
       <Avatar className="w-8 h-8 shrink-0 ring-2 ring-transparent group-hover:ring-purple-500/30 transition-all duration-200">
@@ -71,44 +78,45 @@ function DesktopMessageHeader({ message, agentInfo }: {
 export function MessageItem({ message, agentInfo }: MessageItemProps) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
-  const isUserMessage = message.agentId === "user";
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(message.content);
+  const { copy: handleCopy } = useCopy({
+    onSuccess: () => {
       setCopied(true);
       toast({
         description: "已复制到剪贴板",
       });
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    },
+    onError: () => {
       toast({
         variant: "destructive",
         description: "复制失败",
       });
-    }
-  };
+    },
+  });
+  const isUserMessage = message.agentId === "user";
 
   return (
     <div className="group animate-fadeIn hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all duration-200">
       <div className="px-2 sm:px-4 py-2 max-w-full sm:max-w-3xl mx-auto">
         <MessageHeader message={message} agentInfo={agentInfo} />
         <DesktopMessageHeader message={message} agentInfo={agentInfo} />
-        
+
         {/* 消息内容部分 */}
         <div className="relative">
-          <div className={cn(
-            "text-sm text-gray-700 dark:text-gray-200",
-            "px-0 sm:px-4 py-1 sm:py-3",
-            "sm:bg-white sm:dark:bg-gray-800",
-            "sm:border sm:border-gray-200 sm:dark:border-gray-700",
-            "sm:group-hover:border-gray-300 sm:dark:group-hover:border-gray-600",
-            "sm:rounded-xl sm:break-words",
-            "sm:shadow-sm sm:group-hover:shadow-md",
-            "transition-all duration-200",
-            "sm:ml-11",
-            isUserMessage && "bg-blue-50/50 dark:bg-blue-900/10"
-          )}>
+          <div
+            className={cn(
+              "text-sm text-gray-700 dark:text-gray-200",
+              "px-0 sm:px-4 py-1 sm:py-3",
+              "sm:bg-white sm:dark:bg-gray-800",
+              "sm:border sm:border-gray-200 sm:dark:border-gray-700",
+              "sm:group-hover:border-gray-300 sm:dark:group-hover:border-gray-600",
+              "sm:rounded-xl sm:break-words",
+              "sm:shadow-sm sm:group-hover:shadow-md",
+              "transition-all duration-200",
+              "sm:ml-11",
+              isUserMessage && "bg-blue-50/50 dark:bg-blue-900/10"
+            )}
+          >
             <div className={cn("space-y-2", isUserMessage && "pr-6")}>
               <MessageMarkdownContent
                 content={message.content}
@@ -117,7 +125,7 @@ export function MessageItem({ message, agentInfo }: MessageItemProps) {
               {/* 复制按钮 */}
               {isUserMessage ? (
                 <button
-                  onClick={handleCopy}
+                  onClick={() => handleCopy(message.content)}
                   className="absolute right-0 top-1/2 -translate-y-1/2 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-all"
                   title={copied ? "已复制" : "复制"}
                 >
@@ -130,7 +138,7 @@ export function MessageItem({ message, agentInfo }: MessageItemProps) {
               ) : (
                 <div className="flex items-center gap-4 mt-1.5">
                   <button
-                    onClick={handleCopy}
+                    onClick={() => handleCopy(message.content)}
                     className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
                   >
                     {copied ? (
@@ -150,4 +158,4 @@ export function MessageItem({ message, agentInfo }: MessageItemProps) {
       </div>
     </div>
   );
-} 
+}
