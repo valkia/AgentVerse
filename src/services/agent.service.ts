@@ -51,6 +51,6 @@ export class AgentService {
 export const agentService = new AgentService(
   new MockHttpProvider<Agent>(
     STORAGE_CONFIG.KEYS.AGENTS,
-    STORAGE_CONFIG.MOCK_DELAY_MS
+    { delay: STORAGE_CONFIG.MOCK_DELAY_MS }
   )
 );

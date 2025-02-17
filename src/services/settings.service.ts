@@ -69,8 +69,5 @@ export class SettingsService {
 }
 
 export const settingsService = new SettingsService(
-  new MockHttpProvider<SettingItem>(
-    STORAGE_CONFIG.KEYS.SETTINGS,
-    STORAGE_CONFIG.MOCK_DELAY_MS
-  )
+  new MockHttpProvider<SettingItem>(STORAGE_CONFIG.KEYS.SETTINGS, { delay: STORAGE_CONFIG.MOCK_DELAY_MS })
 );

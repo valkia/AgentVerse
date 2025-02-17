@@ -1,24 +1,30 @@
-import { LocalStorageProvider } from "./local";
+import { LocalStorageOptions, LocalStorageProvider } from "./local";
 import { DataProvider } from "./types";
 
-export class MockHttpProvider<T extends { id: string }> implements DataProvider<T> {
+export class MockHttpProvider<T extends { id: string }>
+  implements DataProvider<T>
+{
   private localStorage: LocalStorageProvider<T>;
   private delay: number;
 
-  constructor(storageKey: string, delay = 300) {
-    this.localStorage = new LocalStorageProvider<T>(storageKey);
-    this.delay = delay;
+  constructor(
+    storageKey: string,
+    options?: LocalStorageOptions<T> & { delay?: number }
+  ) {
+    this.localStorage = new LocalStorageProvider<T>(storageKey, options);
+    this.delay = options?.delay || 0;
   }
 
   private async withDelay<R>(operation: () => Promise<R>): Promise<R> {
-    await new Promise(resolve => setTimeout(resolve, this.delay));
+    await new Promise((resolve) => setTimeout(resolve, this.delay));
     try {
       return await operation();
     } catch (error) {
       // 模拟 HTTP 错误格式
       throw {
         status: 500,
-        message: error instanceof Error ? error.message : 'Internal Server Error',
+        message:
+          error instanceof Error ? error.message : "Internal Server Error",
         timestamp: new Date().toISOString(),
       };
     }
@@ -47,4 +53,4 @@ export class MockHttpProvider<T extends { id: string }> implements DataProvider<
   async delete(id: string): Promise<void> {
     return this.withDelay(() => this.localStorage.delete(id));
   }
-} 
+}

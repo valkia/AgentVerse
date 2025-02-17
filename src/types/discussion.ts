@@ -49,6 +49,8 @@ export interface Discussion {
   settings: DiscussionSettings;
   createdAt: Date;
   updatedAt: Date;
+  lastMessageTime?: Date;  // 最新消息时间
+  lastMessage?: string;    // 最新消息预览
 }
 
 export interface DiscussionSettings {

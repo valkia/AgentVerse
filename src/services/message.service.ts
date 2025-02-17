@@ -1,7 +1,8 @@
-import { AgentMessage } from "@/types/discussion";
-import { MockHttpProvider } from "@/lib/storage";
-import { MessageDataProvider } from "@/types/storage";
 import { STORAGE_CONFIG } from "@/config/storage";
+import { MockHttpProvider } from "@/lib/storage";
+import { AgentMessage } from "@/types/discussion";
+import { MessageDataProvider } from "@/types/storage";
+import { discussionService } from "./discussion.service";
 
 export class MessageService {
   constructor(private readonly provider: MessageDataProvider) {}
@@ -18,17 +19,25 @@ export class MessageService {
   }
 
   async addMessage(discussionId: string, message: Omit<AgentMessage, "id" | "discussionId">): Promise<AgentMessage> {
-    const newMessage: Omit<AgentMessage, "id"> = {
+    const newMessage = await this.provider.create({
       ...message,
       discussionId,
       timestamp: new Date(),
-    };
+    });
 
-    return this.provider.create(newMessage);
+    // 更新会话的最新消息时间
+    await discussionService.updateLastMessage(discussionId, newMessage);
+
+    return newMessage;
   }
 
   async createMessage(data: Omit<AgentMessage, "id">): Promise<AgentMessage> {
-    return this.provider.create(data);
+    const newMessage = await this.provider.create(data);
+    
+    // 更新会话的最新消息时间
+    await discussionService.updateLastMessage(newMessage.discussionId, newMessage);
+    
+    return newMessage;
   }
 
   async updateMessage(id: string, data: Partial<AgentMessage>): Promise<AgentMessage> {
@@ -47,5 +56,10 @@ export class MessageService {
 
 // 创建服务实例
 export const messageService = new MessageService(
-  new MockHttpProvider<AgentMessage>(STORAGE_CONFIG.KEYS.MESSAGES, STORAGE_CONFIG.MOCK_DELAY_MS)
+  new MockHttpProvider<AgentMessage>(
+    STORAGE_CONFIG.KEYS.MESSAGES,
+    {
+      delay: STORAGE_CONFIG.MOCK_DELAY_MS,
+    }
+  )
 ); 

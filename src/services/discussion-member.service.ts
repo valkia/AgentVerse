@@ -89,5 +89,5 @@ export class DiscussionMemberService {
 }
 
 export const discussionMemberService = new DiscussionMemberService(
-  new MockHttpProvider<DiscussionMember>(STORAGE_CONFIG.KEYS.DISCUSSION_MEMBERS, STORAGE_CONFIG.MOCK_DELAY_MS)
+  new MockHttpProvider<DiscussionMember>(STORAGE_CONFIG.KEYS.DISCUSSION_MEMBERS, { delay: STORAGE_CONFIG.MOCK_DELAY_MS })
 );
