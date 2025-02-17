@@ -1,14 +1,9 @@
-import { BaseAgentState, BaseAgent } from "@/lib/agent/base-agent";
-import {
-  createRolePrompt,
-  generateCapabilityPrompt,
-  formatActionResult,
-  formatMessage,
-} from "@/lib/agent/prompts";
-import { ChatRole, ChatMessage } from "@/lib/ai-service";
+import { BaseAgent, BaseAgentState } from "@/lib/agent/base-agent";
+import { PromptBuilder } from "@/lib/agent/prompt/prompt-builder";
+import { ChatMessage, ChatRole } from "@/lib/ai-service";
 import { CapabilityRegistry } from "@/lib/capabilities";
 import { DiscussionKeys } from "@/lib/discussion/discussion-env";
-import { SpeakRequest, SpeakReason } from "@/lib/discussion/speak-scheduler";
+import { SpeakReason, SpeakRequest } from "@/lib/discussion/speak-scheduler";
 import {
   agentListResource,
   discussionMembersResource,
@@ -18,9 +13,9 @@ import { aiService } from "@/services/ai.service";
 import { discussionControlService } from "@/services/discussion-control.service";
 import { messageService } from "@/services/message.service";
 import {
+  ActionResultMessage,
   AgentMessage,
   NormalMessage,
-  ActionResultMessage,
 } from "@/types/discussion";
 
 /**
@@ -31,6 +26,7 @@ import {
 export abstract class MessageHandlingAgent<
   S extends BaseAgentState = BaseAgentState
 > extends BaseAgent<S> {
+  private promptBuilder = new PromptBuilder();
   // 实现消息监听的基础设施
   protected onEnter(): void {
     const off = this.env.eventBus.on(
@@ -45,7 +41,7 @@ export abstract class MessageHandlingAgent<
   // 消息处理核心流程
   protected async onMessage(message: AgentMessage): Promise<void> {
     if (!this.shouldProcessMessage()) {
-      return;  // 如果已暂停，不处理消息
+      return; // 如果已暂停，不处理消息
     }
 
     if (message.type === "action_result") {
@@ -88,7 +84,6 @@ export abstract class MessageHandlingAgent<
         this.setState({ isThinking: false } as Partial<S>);
         return;
       }
-
       this.state.lastSpeakTime =
         message.timestamp instanceof Date
           ? message.timestamp
@@ -107,21 +102,14 @@ export abstract class MessageHandlingAgent<
     message: NormalMessage
   ): Promise<NormalMessage> {
     const prepared = await this.prepareMessages(message);
-    const { systemPrompt, chatMessages } = prepared;
-    const response = await aiService.chatCompletion([
-      { role: "system", content: systemPrompt },
-      ...chatMessages,
-    ]);
+    const response = await aiService.chatCompletion(prepared);
     return await this.addMessage(response);
   }
 
   // 提取公共的消息准备逻辑
   protected async prepareMessages(
     message?: NormalMessage | ActionResultMessage
-  ): Promise<{
-    systemPrompt: string;
-    chatMessages: Array<{ role: "system"; content: string }>;
-  }> {
+  ): Promise<ChatMessage[]> {
     const discussionId = discussionControlService.getCurrentDiscussionId();
     if (!discussionId) {
       throw new Error("Discussion ID is not set");
@@ -132,65 +120,15 @@ export abstract class MessageHandlingAgent<
     const memberAgents = (
       await discussionMembersResource.current.whenReady()
     ).map((member) => agentList.find((agent) => agent.id === member.agentId)!);
-    const getAgentName = (agentId: string) => {
-      const agent = agentList.find((agent) => agent.id === agentId);
-      return agent?.name ?? agentId;
-    };
 
-    // 构建系统提示词
-    let systemPrompt = createRolePrompt(this.config, memberAgents);
-
-    // 如果是主持人，添加额外的能力提示
-    if (this.config.role === "moderator") {
-      systemPrompt = [
-        systemPrompt,
-        generateCapabilityPrompt(
-          CapabilityRegistry.getInstance().getCapabilities()
-        ),
-      ].join("\n\n");
-    }
-
-    // 处理历史消息
-    const chatMessages = messages
-      .slice(-(this.config.conversation?.contextMessages ?? 10))
-      .map((msg) => {
-        if (msg.type === "action_result") {
-          return {
-            role: "system" as const,
-            content: formatActionResult(msg.results),
-          };
-        }
-
-        return {
-          role: "system" as const,
-          content: formatMessage(
-            (msg as NormalMessage).content,
-            msg.agentId === this.config.agentId,
-            getAgentName(msg.agentId)
-          ),
-        };
-      });
-
-    // 添加当前消息
-    if (message) {
-      if (message.type === "action_result") {
-        chatMessages.push({
-          role: "system" as const,
-          content: formatActionResult(message.results),
-        });
-      } else {
-        chatMessages.push({
-          role: "system" as const,
-          content: formatMessage(
-            message.content,
-            message.agentId === this.config.agentId,
-            getAgentName(message.agentId)
-          ),
-        });
-      }
-    }
-
-    return { systemPrompt, chatMessages };
+    return this.promptBuilder.buildPrompt({
+      currentAgent: this.config,
+      currentAgentConfig: this.config,
+      agents: memberAgents,
+      messages,
+      triggerMessage: message,
+      capabilities: CapabilityRegistry.getInstance().getCapabilities(),
+    });
   }
 
   // 提取流式消息处理逻辑
@@ -261,11 +199,7 @@ export abstract class MessageHandlingAgent<
     actionMessage: ActionResultMessage
   ): Promise<AgentMessage> {
     const prepared = await this.prepareMessages(actionMessage);
-    const { systemPrompt, chatMessages } = prepared;
-    const response = await aiService.chatCompletion([
-      { role: "system", content: systemPrompt },
-      ...chatMessages,
-    ]);
+    const response = await aiService.chatCompletion(prepared);
     return await this.addMessage(response);
   }
 
@@ -273,22 +207,14 @@ export abstract class MessageHandlingAgent<
     actionMessage: ActionResultMessage
   ): Promise<NormalMessage> {
     const prepared = await this.prepareMessages(actionMessage);
-    const { systemPrompt, chatMessages } = prepared;
-    return this.handleStreamingResponse([
-      { role: "system", content: systemPrompt },
-      ...chatMessages,
-    ]);
+    return this.handleStreamingResponse(prepared);
   }
 
   protected async generateStreamingMessage(
     message: NormalMessage
   ): Promise<NormalMessage> {
     const prepared = await this.prepareMessages(message);
-    const { systemPrompt, chatMessages } = prepared;
-    return this.handleStreamingResponse([
-      { role: "system", content: systemPrompt },
-      ...chatMessages,
-    ]);
+    return this.handleStreamingResponse(prepared);
   }
 
   // 检查消息中是否 @ 了当前 agent

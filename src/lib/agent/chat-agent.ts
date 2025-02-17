@@ -1,13 +1,16 @@
-import { BaseActionExecutor, DefaultActionExecutor } from "@/lib/agent/action-executor";
-import { ActionParser, ActionDef } from "@/lib/agent/action-parser";
-import { MessageHandlingAgent } from "./message-handling-agent";
+import { BaseActionExecutor, DefaultActionExecutor } from "@/lib/agent/action";
+import { ActionDef, ActionParser } from "@/lib/agent/action/action-parser";
 import { CapabilityRegistry } from "@/lib/capabilities";
 import { DiscussionKeys } from "@/lib/discussion/discussion-env";
 import { generateId } from "@/lib/utils";
 import { messagesResource } from "@/resources";
 import { messageService } from "@/services/message.service";
-import { ActionResultMessage, AgentMessage, NormalMessage } from "@/types/discussion";
-
+import {
+  ActionResultMessage,
+  AgentMessage,
+  NormalMessage,
+} from "@/types/discussion";
+import { MessageHandlingAgent } from "./message-handling-agent";
 
 /**
  * 示例：一个简单的聊天Agent

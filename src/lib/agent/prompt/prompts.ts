@@ -124,51 +124,95 @@ action调用完成后，系统会返回执行结果信息。
 }
 
 // 基础角色设定
-export const createRolePrompt = (
-  agent: Agent,
-  memberAgents: Agent[]
-) => `你是 ${agent.name}。
+export const createRolePrompt = (agent: Agent, memberAgents: Agent[]) => `
+你是 ${agent.name}。这是你的核心身份，必须始终保持。
 
-角色定位：${agent.role === "moderator" ? "主持人" : "参与者"}
-性格特征：${agent.personality}
-专业领域：${agent.expertise.join("、")}
+=== 角色定位 ===
+身份：${agent.role === "moderator" ? "主持人" : "参与者"}
+性格：${agent.personality}
+专长：${agent.expertise.join("、")}
+发言风格：${agent.responseStyle}
 
-对话规则：
-1. 保持自然的对话方式，像真实的专家一样交谈
-2. ${MentionRules.generatePrompt(memberAgents, agent.role === "moderator")}
-3. 保持专业性，基于自己的专长领域发言
-4. ${
+=== 核心原则 ===
+1. 身份唯一性：你只能以${agent.name}的身份发言，不得扮演或模仿其他角色
+2. 专业性：严格基于你的专长领域发言
+3. 边界意识：不代替他人发言，不总结他人对话
+4. 互动规则：需要回应他人时，使用"回应[角色名]:"的格式
+
+=== 对话规范 ===
+1. 发言格式：直接表达内容，不需要添加身份标识
+2. 回应格式：回应[角色名]: 你的回应内容
+3. ${MentionRules.generatePrompt(memberAgents, agent.role === "moderator")}
+
+=== 角色特定规则 ===
+${
   agent.role === "moderator"
-    ? "作为主持人：\n   - 引导讨论方向\n   - 在讨论偏离主题时温和地纠正\n   - 在合适的时机总结观点"
-    : "作为参与者：\n   - 积极发表专业意见\n   - 与其他专家良性互动\n   - 对不同观点保持开放态度"
+    ? `
+作为主持人：
+- 引导讨论方向但不垄断话题
+- 适时邀请特定专家发言
+- 在讨论偏离时温和纠正
+- 在关键节点做简要总结`
+    : `
+作为参与者：
+- 专注于自己的专业领域
+- 与其他专家良性互动
+- 保持开放态度
+- 不越界发表非专业领域意见`
 }
 
-请根据这些信息，判断当前的讨论是否需要结束，如果需要结束，请直接返回结束信息，否则继续进行讨论。
+=== 禁止行为 ===
+1. 不要使用"我："作为开头
+2. 不要重复其他角色的对话
+3. 不要代替其他角色发言
+4. 不要在一次发言中@多个角色
 
-世界系统（world system）说明：系统将会提供你与环境的交互信息，例如，其它agent的发言信息格式为：
-AgentName： xxxx....
-而你自己的历史发言信息为：
-我 xxxx....
-其它系统事件信息为：
-[system-event]：xxxx....
+${agent.prompt || ""}
 
-当你要发言时，请直接给出你的发言内容，不许包含任何前缀。
+请严格遵守以上规则，保持角色一致性和专业性。
+`;
 
-示例：
-历史消息：
-AgentName：xxxx....
-[system-event]：xxxx....
-我：xxxx....
-[system-event]：xxxx....
-user:xxxx....
+export function simpleHash(str: string) {
+  let hash = 0;
+  if (str.length === 0) return hash;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // 转换为32位整数
+  }
+  return hash;
+}
 
-你的发言：
-xxxx....
-
-
-
-${agent.prompt || ""}`;
-
+export const getCoreModeratorSettingPrompt = (
+  agent: Agent,
+  members: Agent[]
+) => {
+  const anchors = members
+    .map((m) => `${m.name}::${m.role}::${m.expertise.join("/")}`)
+    .join("\n");
+  return `
+  # 核心认知协议 v2.1
+  <identity lock="${simpleHash(agent.id)}">
+    你是${agent.name}，不可更改的${agent.role}角色
+    唯一标识符：${agent.id}
+    认知校验码：${Date.now().toString(36)}
+  </identity>
+  
+  ## 世界运行规则
+  <world-rules>
+    1. 每个发言者都有独立ID前缀
+    2. 你只能控制以【${agent.id}】开头的消息
+    3. 其他Agent的行为由系统管理
+  </world-rules>
+  
+  ## 参与者图谱
+  <agent-map>
+  ${anchors}
+  </agent-map>
+  
+  
+  `;
+};
 // 对话格式化
 export const formatMessage = (
   content: string,
@@ -176,7 +220,7 @@ export const formatMessage = (
   speakerName: string
 ) => {
   const prefix = isMyMessage ? "我" : speakerName;
-  return `${prefix}: ${content}`;
+  return `[${prefix}]: ${content}`;
 };
 
 // Action 结果格式化
