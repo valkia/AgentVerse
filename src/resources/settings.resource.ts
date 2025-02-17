@@ -103,7 +103,7 @@ export const recoverDefaultSettings = async () => {
   }
 };
 
-const settinListResource = createResource<SettingItem[]>(
+const settingListResource = createResource<SettingItem[]>(
   async () => {
     const settings = await settingsService.listSettings();
     const existingSettings = settings.map((setting) => setting.key);
@@ -128,21 +128,23 @@ const settinListResource = createResource<SettingItem[]>(
           const settings = state.data;
           const providerType = settings.find(
             (setting) => setting.key === SETTING_KYES.AI.PROVIDER.ID
-          )!.value as SupportedAIProvider;
-          const providerConfig = AI_PROVIDER_CONFIG[providerType];
+          )!.value;
+          const providerConfig = Object.entries(AI_PROVIDER_CONFIG).find(
+            ([key]) => key === providerType
+          )?.[1];
           aiService.configure({
             apiKey:
               (settings.find(
                 (setting) => setting.key === SETTING_KYES.AI.PROVIDER.API_KEY
-              )!.value as string) || providerConfig.apiKey,
+              )!.value as string) || providerConfig?.apiKey||"",
             model:
               (settings.find(
                 (setting) => setting.key === SETTING_KYES.AI.PROVIDER.MODEL
-              )!.value as string) || providerConfig.model,
+              )!.value as string) || providerConfig?.model || "",
             baseUrl:
               (settings.find(
                 (setting) => setting.key === SETTING_KYES.AI.PROVIDER.API_URL
-              )!.value as string) || providerConfig.baseUrl,
+              )!.value as string) || providerConfig?.baseUrl || "",
           });
         }
       });
@@ -152,11 +154,11 @@ const settinListResource = createResource<SettingItem[]>(
 // 设置资源
 export const settingsResource = {
   // 所有设置列表
-  list: settinListResource,
+  list: settingListResource,
 
   // 按分类组织的设置
   byCategory: createResource(async () => {
-    const settings = await settinListResource.whenReady();
+    const settings = await settingListResource.whenReady();
     return settings.reduce((acc, setting) => {
       if (!acc[setting.category]) {
         acc[setting.category] = [];
