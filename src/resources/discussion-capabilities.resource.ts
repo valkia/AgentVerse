@@ -13,55 +13,56 @@ import { discussionMemberService } from "@/services/discussion-member.service";
 const capabilities: Capability[] = [
   {
     name: "getAvailableAgents",
-    description: `
-获取所有可用的Agent列表
----
-输入参数：
-  无
-
-返回值：
-  type: array
-  items:
-    type: object
-    properties:
-      id: string - Agent唯一标识符
-      name: string - Agent名称
-      avatar: string - Agent头像URL
-      role: string - Agent角色，可选值：'moderator' | 'participant'
-      personality: string - Agent性格特征
-      expertise: array<string> - Agent专长领域
-`,
+    description: `<capability>
+  <name>获取所有可用的Agent列表</name>
+  <params>无</params>
+  <returns>
+    <type>Agent数组</type>
+    <schema>
+      id: string        // Agent ID
+      name: string      // 名称
+      avatar: string    // 头像
+      role: 'moderator' | 'participant'  // 角色
+      personality: string  // 性格
+      expertise: string[] // 专长
+    </schema>
+  </returns>
+</capability>`,
     execute: async () => {
       return agentListResource.read().data;
     },
   },
   {
     name: "createAgent",
-    description: `
-创建一个新的Agent成员。你可以通过这个能力创建一个新的AI助手，指定其专业领域、性格特征和行为方式。
-
-输入参数：
-  name: string - Agent的名称，例如："产品经理"
-  role: string - 角色类型，必须是 'moderator'(主持人) 或 'participant'(参与者)
-  personality: string - 性格特征描述，例如："严谨理性、善于分析"
-  expertise: string[] - 专业领域列表，例如：["产品设计", "用户体验", "市场分析"]
-  prompt: string - 对Agent的行为指导，用于定义其在对话中的表现
-  avatar: string? - （可选）头像URL，使用 DiceBear Bottts 风格，格式为："https://api.dicebear.com/7.x/bottts/svg?seed={关键词}"，例如："https://api.dicebear.com/7.x/bottts/svg?seed=product-manager"。不提供时会自动生成
-  bias: string? - （可选）偏好倾向，例如："注重用户体验"
-  responseStyle: string? - （可选）回复风格，例如："专业严谨"
-
-示例参数：
-  {
-    "name": "产品经理",
-    "role": "participant",
-    "personality": "严谨理性、善于分析",
-    "expertise": ["产品设计", "用户体验", "市场分析"],
-    "prompt": "你是一位经验丰富的产品经理，擅长分析用户需求和市场趋势。在讨论中，你应该：\\n1. 关注用户价值\\n2. 考虑市场可行性\\n3. 平衡各方需求\\n4. 提供可执行的建议"
-  }
-注意事项：
-  1. 创建新的 Agent 后，如果需要该 agent 参与讨论，需要先 addMember 将其添加到讨论中。
-  
-  `,
+    description: `<capability>
+  <name>创建新的Agent</name>
+  <params>
+    <schema>
+      name: string         // 名称
+      role: 'moderator' | 'participant'  // 角色
+      personality: string  // 性格
+      expertise: string[]  // 专长领域
+      prompt: string       // 行为指导
+      avatar?: string      // 头像URL（可选）
+      bias?: string        // 偏好（可选）
+      responseStyle?: string // 回复风格（可选）
+    </schema>
+  </params>
+  <example>
+    {
+      "name": "产品经理",
+      "role": "participant",
+      "personality": "严谨理性",
+      "expertise": ["产品设计", "用户体验"],
+      "prompt": "你是一位产品经理，关注用户价值，考虑市场可行性"
+    }
+  </example>
+  <notes>
+    <note>必填：name, role, personality, expertise, prompt</note>
+    <note>不提供avatar时会自动生成</note>
+    <note>创建后需要用addMember添加到讨论中</note>
+  </notes>
+</capability>`,
     execute: async (params) => {
       // 验证必填字段
       const requiredFields = ['name', 'role', 'personality', 'expertise', 'prompt'];
@@ -108,22 +109,19 @@ const capabilities: Capability[] = [
   },
   {
     name: "getCurrentDiscussionMembers",
-    description: `
-获取当前讨论的所有成员
----
-输入参数：
-  无
-
-返回值：
-  type: array
-  items:
-    type: object
-    properties:
-      id: string - 成员ID
-      agentId: string - 关联的Agent ID
-      agentName: string - Agent名称
-      isAutoReply: boolean - 是否自动回复
-`,
+    description: `<capability>
+  <name>获取当前讨论的所有成员</name>
+  <params>无</params>
+  <returns>
+    <type>成员数组</type>
+    <schema>
+      id: string         // 成员ID
+      agentId: string    // Agent ID
+      agentName: string  // Agent名称
+      isAutoReply: boolean // 是否自动回复
+    </schema>
+  </returns>
+</capability>`,
     execute: async () => {
       const members = discussionMembersResource.current.read().data;
       const agents = agentListResource.read().data;
@@ -136,28 +134,17 @@ const capabilities: Capability[] = [
   },
   {
     name: "addMember",
-    description: `
-添加成员到讨论中
----
-输入参数：
-  type: object
-  required: true
-  properties:
-    agentId:
-      type: string
-      description: 要添加的Agent的ID
-      required: true
-
-返回值：
-  type: array
-  description: 更新后的成员列表
-  items:
-    type: object
-    properties:
-      id: string - 成员ID
-      agentId: string - 关联的Agent ID
-      isAutoReply: boolean - 是否自动回复
-`,
+    description: `<capability>
+  <name>添加成员到讨论中</name>
+  <params>
+    <schema>
+      agentId: string  // 要添加的Agent ID
+    </schema>
+  </params>
+  <returns>
+    <type>更新后的成员数组</type>
+  </returns>
+</capability>`,
     execute: async ({ agentId }) => {
       const discussionId = discussionControlService.getCurrentDiscussionId();
       if (!discussionId) return null;
@@ -176,28 +163,17 @@ const capabilities: Capability[] = [
   },
   {
     name: "removeMember",
-    description: `
-从讨论中移除成员
----
-输入参数：
-  type: object
-  required: true
-  properties:
-    memberId:
-      type: string
-      description: 要移除的成员ID
-      required: true
-
-返回值：
-  type: array
-  description: 更新后的成员列表
-  items:
-    type: object
-    properties:
-      id: string - 成员ID
-      agentId: string - 关联的Agent ID
-      isAutoReply: boolean - 是否自动回复
-`,
+    description: `<capability>
+  <name>从讨论中移除成员</name>
+  <params>
+    <schema>
+      memberId: string  // 要移除的成员ID
+    </schema>
+  </params>
+  <returns>
+    <type>更新后的成员数组</type>
+  </returns>
+</capability>`,
     execute: async ({ memberId }) => {
       console.log("[Capabilities] memberId:", memberId);
       await discussionMemberService.delete(memberId);
@@ -206,46 +182,43 @@ const capabilities: Capability[] = [
   },
   {
     name: "askUserToChoose",
-    description: `
-向用户展示选项并获取其选择。
-
-使用场景：
-1. 需要用户在多个选项中做出选择
-2. 收集用户对某个问题的具体偏好
-3. 引导用户完成分步骤的决策过程
-
-输入参数：
-  options: 选项列表，每个选项包含：
-    - value: 选项值
-    - label: 显示文本
-    - description: 选项描述（可选）
-  multiple: 是否允许多选（默认false）
-  defaultValue: 默认选中的值（仅在 multiple=true 时可用，单选模式下不应该提供此参数）
-
-返回值：
-  selected: 用户选择的值（单选为string，多选为string[]）
-
-注意：
-- 单选模式下不要提供 defaultValue 参数，让用户主动做出选择
-- 多选模式下可以提供 defaultValue 来预选某些选项
-
-示例：
-:::action
-{
-  "capability": "askUserToChoose",
-  "description": "请选择开发框架",
-  "params": {
-    "options": [
-      {
-        "value": "next",
-        "label": "Next.js",
-        "description": "React全栈框架"
-      }
-    ]
-  }
-}
-:::
-`,
+    description: `<capability>
+  <name>请求用户从选项中选择</name>
+  <params>
+    <schema>
+      options: [
+        {
+          value: string      // 选项值
+          label: string      // 显示文本
+          description?: string // 描述（可选）
+        }
+      ]
+      multiple?: boolean     // 是否多选
+      defaultValue?: string | string[] // 默认值（仅多选可用）
+    </schema>
+  </params>
+  <returns>
+    <type>用户选择结果</type>
+    <schema>
+      selected: string | string[]  // 用户选择的值
+    </schema>
+  </returns>
+  <example>
+    {
+      "options": [
+        {
+          "value": "next",
+          "label": "Next.js",
+          "description": "React框架"
+        }
+      ]
+    }
+  </example>
+  <notes>
+    <note>单选不要提供defaultValue</note>
+    <note>5分钟超时</note>
+  </notes>
+</capability>`,
     execute: async (params) => {
       // 验证参数
       if (!Array.isArray(params.options) || params.options.length === 0) {
