@@ -18,7 +18,7 @@ export function ResponsiveContainer({
   showMobileSidebar = false,
   onMobileSidebarChange,
 }: ResponsiveContainerProps) {
-  const { isMobile } = useBreakpointContext();
+  const { isLessThan } = useBreakpointContext();
 
   return (
     <div className={cn("h-full w-full overflow-hidden flex", className)}>
@@ -36,7 +36,7 @@ export function ResponsiveContainer({
           >
             {sidebarContent}
           </div>
-          {isMobile && showMobileSidebar && (
+          {isLessThan("lg") && showMobileSidebar && (
             <div
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
               onClick={() => onMobileSidebarChange?.(false)}

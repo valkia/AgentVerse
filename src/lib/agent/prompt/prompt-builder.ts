@@ -57,7 +57,7 @@ export class PromptBuilder {
         }
 
         return {
-          role: "system" as const,
+          role: "user" as const,
           content: formatMessage(
             (msg as NormalMessage).content,
             msg.agentId === currentAgentConfig.agentId,
@@ -75,7 +75,7 @@ export class PromptBuilder {
         });
       } else {
         chatMessages.push({
-          role: "system" as const,
+          role: "user" as const,
           content: formatMessage(
             triggerMessage.content,
             triggerMessage.agentId === currentAgentConfig.agentId,
