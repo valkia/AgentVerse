@@ -163,7 +163,6 @@ export const createRolePrompt = (agent: Agent, memberAgents: Agent[]) => {
     1. 每个发言者都有独立ID前缀
     2. 你只能控制以【${agent.id}】开头的消息
     3. 其他Agent的行为由系统管理
-    // 4. 需要回应他人时，使用"回应[角色名]:"的格式
   </world-rules>
 
   ## 参与者图谱
