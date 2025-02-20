@@ -9,6 +9,7 @@ import {
 import { agentService } from "@/services/agent.service";
 import { discussionControlService } from "@/services/discussion-control.service";
 import { discussionMemberService } from "@/services/discussion-member.service";
+import { dbCapabilities } from "./db-capabilities";
 
 const capabilities: Capability[] = [
   {
@@ -244,6 +245,7 @@ const capabilities: Capability[] = [
       });
     },
   },
+  ...dbCapabilities,
 ];
 
 export const discussionCapabilitiesResource = createResource(() =>
