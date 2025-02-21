@@ -65,8 +65,8 @@ export const discussionService = new DiscussionService(
     // 使用多字段排序
     comparator: (a, b) => {
       return (
-        new Date(b.createdAt || b.lastMessageTime).getTime() -
-        new Date(a.createdAt || a.lastMessageTime).getTime()
+        new Date(b.lastMessageTime || b.createdAt).getTime() -
+        new Date(a.lastMessageTime || a.createdAt).getTime()
       );
     },
     // sortFields: [
