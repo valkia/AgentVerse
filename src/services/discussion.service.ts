@@ -1,5 +1,5 @@
 import { STORAGE_CONFIG } from "@/config/storage";
-import { MockHttpProvider, SortField } from "@/lib/storage";
+import { MockHttpProvider } from "@/lib/storage";
 import { AgentMessage, Discussion } from "@/types/discussion";
 import { DiscussionDataProvider } from "@/types/storage";
 
@@ -63,16 +63,22 @@ export const discussionService = new DiscussionService(
     delay: STORAGE_CONFIG.MOCK_DELAY_MS,
     maxItems: 1000,
     // 使用多字段排序
-    sortFields: [
-      {
-        field: "lastMessageTime",
-        // 自定义比较器处理 undefined 情况
-        comparator: (a?: Date, b?: Date) => {
-          const timeA = (a ? new Date(a).getTime() : Infinity) as number;
-          const timeB = (b ? new Date(b).getTime() : Infinity) as number;
-          return timeB - timeA;
-        },
-      } as SortField<Discussion, "lastMessageTime">,
-    ],
+    comparator: (a, b) => {
+      return (
+        new Date(b.createdAt || b.lastMessageTime).getTime() -
+        new Date(a.createdAt || a.lastMessageTime).getTime()
+      );
+    },
+    // sortFields: [
+    //   {
+    //     field: "lastMessageTime",
+    //     // 自定义比较器处理 undefined 情况
+    //     comparator: (a?: Date, b?: Date) => {
+    //       const timeA = (a ? new Date(a).getTime() : Infinity) as number;
+    //       const timeB = (b ? new Date(b).getTime() : Infinity) as number;
+    //       return timeB - timeA;
+    //     },
+    //   } as SortField<Discussion, "lastMessageTime">,
+    // ],
   })
 );
