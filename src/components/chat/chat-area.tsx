@@ -9,6 +9,7 @@ import { useRef } from "react";
 import { ChatEmptyGuide } from "./chat-empty-guide";
 import { MessageList, MessageListRef } from "./message";
 import { MessageInput, MessageInputRef } from "./message-input";
+import { useViewportHeight } from "@/hooks/useViewportHeight";
 
 interface ChatAreaProps {
   messages: AgentMessage[];
@@ -31,6 +32,7 @@ export function ChatArea({
   messageListClassName,
   inputAreaClassName,
 }: ChatAreaProps) {
+  const { isKeyboardVisible } = useViewportHeight();
   const messageListRef = useRef<MessageListRef>(null);
   const messageInputRef = useRef<MessageInputRef>(null);
   const isFirstMessage = messages.length === 0;
@@ -57,10 +59,10 @@ export function ChatArea({
   }
 
   return (
-    <div className={cn("h-full flex flex-col", className)}>
-      {/* 消息列表区域 - 可滚动区域 */}
+    <div className={cn("flex flex-col h-full", className)}>
+      {/* 消息列表区域 - 自动收缩区域 */}
       <div className={cn(
-        "flex-1 min-h-0 overflow-y-auto pl-4 relative",
+        "flex-1 min-h-0 overflow-y-auto pl-4 relative scrollbar-thin",
         messageListClassName
       )}>
         <AnimatePresence mode="wait">
@@ -93,10 +95,11 @@ export function ChatArea({
         </AnimatePresence>
       </div>
 
-      {/* 输入框区域 - 固定在底部 */}
+      {/* 输入框区域 */}
       <div className={cn(
-        "flex-none border-t dark:border-gray-700 shadow-sm",
-        "bg-background/95 backdrop-blur-sm",
+        "flex-none border-t dark:border-gray-700",
+        "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80",
+        isKeyboardVisible && "shadow-lg",
         inputAreaClassName
       )}>
         <MessageInput
@@ -104,7 +107,6 @@ export function ChatArea({
           isFirstMessage={isFirstMessage}
           onSendMessage={handleSendMessage}
           data-testid="chat-message-input"
-          className="px-4"
         />
       </div>
     </div>

@@ -53,50 +53,49 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       : "发送消息... (Enter 发送，Shift/Cmd/Ctrl + Enter 换行)";
 
     return (
-      <div className={cn(
-        "w-full bg-background/95 backdrop-blur-sm py-4",
-        className
-      )}>
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <AutoResizeTextarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                // 如果按下了任何修饰键，允许换行
-                if (e.shiftKey || e.metaKey || e.ctrlKey) {
-                  return;
+      <div className={cn(className)}>
+        <div className="p-4 space-y-3">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <AutoResizeTextarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  // 如果按下了任何修饰键，允许换行
+                  if (e.shiftKey || e.metaKey || e.ctrlKey) {
+                    return;
+                  }
+                  // 单纯的 Enter 键，发送消息
+                  e.preventDefault();
+                  handleSubmit(e);
                 }
-                // 单纯的 Enter 键，发送消息
-                e.preventDefault();
-                handleSubmit(e);
-              }
-            }}
-            placeholder={inputPlaceholder}
-            className="flex-1 min-h-[2.25rem] text-sm"
-            disabled={isLoading}
-            minRows={1}
-            maxRows={4}
-          />
-          <Button
-            type="submit"
-            size="sm"
-            disabled={!canSubmit}
-            className={cn(
-              "transition-all px-2 h-9 min-w-[36px] self-end",
-              canSubmit
-                ? "bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
-                : "opacity-50 cursor-not-allowed"
-            )}
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </Button>
-        </form>
+              }}
+              placeholder={inputPlaceholder}
+              className="flex-1 min-h-[2.25rem] text-sm"
+              disabled={isLoading}
+              minRows={1}
+              maxRows={8}
+            />
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!canSubmit}
+              className={cn(
+                "transition-all px-2 h-9 min-w-[36px] self-end",
+                canSubmit
+                  ? "bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600"
+                  : "opacity-50 cursor-not-allowed"
+              )}
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </form>
+        </div>
       </div>
     );
   }

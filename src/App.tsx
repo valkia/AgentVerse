@@ -10,14 +10,13 @@ import { useAgents } from "@/hooks/useAgents";
 import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
 import { useMessages } from "@/hooks/useMessages";
 import { useTheme } from "@/hooks/useTheme";
+import { useViewportHeight } from "@/hooks/useViewportHeight";
 import { cn } from "@/lib/utils";
 import { discussionControlService } from "@/services/discussion-control.service";
 import { Discussion, NormalMessage } from "@/types/discussion";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useBeanState } from "rx-nested-bean";
 import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
-import React from "react";
-import { ViewportProvider } from "@/lib/viewport-height";
 
 // 动态导入非首屏组件
 const SettingsDialog = React.lazy(() => import("@/components/settings/settings-dialog").then(module => ({ default: module.SettingsDialog })));
@@ -42,6 +41,7 @@ export function App() {
     discussionControlService.isPausedBean
   );
   const status = isPaused ? "paused" : "active";
+  const { height } = useViewportHeight();
 
   const handleStatusChange = (status: Discussion["status"]) => {
     setIsPaused(status === "active");
@@ -148,46 +148,38 @@ export function App() {
   );
 
   return (
-    <ViewportProvider
-      enableKeyboardAdapter
-      enableDvhFallback
-      onHeightChange={(height) => {
-        console.log('Viewport height changed:', height);
-      }}
-    >
-      <div data-viewport-height data-testid="app-root" className={rootClassName}>
-        <div data-viewport-scroll className="flex flex-col h-full">
-          {/* PC端顶部Header */}
-          <Header
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-            status={status}
-            className="hidden lg:flex flex-none"
+    <div className="fixed inset-0 flex flex-col" style={{ height }}>
+      <div className={cn(rootClassName, "flex flex-col h-full")}>
+        {/* PC端顶部Header */}
+        <Header
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+          status={status}
+          className="hidden lg:flex flex-none"
+        />
+
+        <div className="flex-1 min-h-0">
+          <ResponsiveContainer
+            sidebarContent={sidebarContent}
+            mainContent={mainContent}
+            showMobileSidebar={showMobileSidebar}
+            onMobileSidebarChange={setShowMobileSidebar}
           />
-
-          <div className="flex-1 min-h-0">
-            <ResponsiveContainer
-              sidebarContent={sidebarContent}
-              mainContent={mainContent}
-              showMobileSidebar={showMobileSidebar}
-              onMobileSidebarChange={setShowMobileSidebar}
-            />
-          </div>
-
-          {/* 移动端成员管理抽屉 */}
-          <React.Suspense>
-            <MobileMemberDrawer
-              open={showMobileMembers}
-              onOpenChange={setShowMobileMembers}
-            />
-            <AddAgentDialog
-              isOpen={showMobileAgentsDialog}
-              onOpenChange={setShowMobileAgentsDialog}
-            />
-            <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
-          </React.Suspense>
         </div>
+
+        {/* 移动端成员管理抽屉 */}
+        <React.Suspense>
+          <MobileMemberDrawer
+            open={showMobileMembers}
+            onOpenChange={setShowMobileMembers}
+          />
+          <AddAgentDialog
+            isOpen={showMobileAgentsDialog}
+            onOpenChange={setShowMobileAgentsDialog}
+          />
+          <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
+        </React.Suspense>
       </div>
-    </ViewportProvider>
+    </div>
   );
 }
