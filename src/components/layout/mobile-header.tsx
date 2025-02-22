@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Menu, Users, Sun, Moon, Settings } from "lucide-react";
+import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "../common/theme-toggle";
+import { MemberManagement } from "../agent/member-management";
+import { SettingsFeature } from "../settings/settings-feature";
 
 interface MobileHeaderProps {
   title?: string;
   onToggleSidebar?: () => void;
-  onShowAgentManagementPanel?: () => void;
-  onShowSettings?: () => void;
   isDarkMode?: boolean;
   onThemeToggle?: () => void;
   className?: string;
@@ -15,10 +16,8 @@ interface MobileHeaderProps {
 export function MobileHeader({
   title = "讨论系统",
   onToggleSidebar,
-  onShowAgentManagementPanel,
-  onShowSettings,
-  isDarkMode,
-  onThemeToggle,
+  isDarkMode = false,
+  onThemeToggle = () => {},
   className
 }: MobileHeaderProps) {
   return (
@@ -36,34 +35,13 @@ export function MobileHeader({
           <Menu className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-medium flex-1">{title}</h1>
-        <Button
-          variant="ghost"
-          size="icon"
+        <SettingsFeature className="h-8 w-8" />
+        <MemberManagement className="h-8 w-8" />
+        <ThemeToggle 
+          isDarkMode={isDarkMode} 
+          onToggle={onThemeToggle}
           className="h-8 w-8"
-          onClick={onShowSettings}
-        >
-          <Settings className="h-5 w-5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={onShowAgentManagementPanel}
-        >
-          <Users className="h-5 w-5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={onThemeToggle}
-        >
-          {isDarkMode ? (
-            <Sun className="h-5 w-5" />
-          ) : (
-            <Moon className="h-5 w-5" />
-          )}
-        </Button>
+        />
       </div>
     </header>
   );

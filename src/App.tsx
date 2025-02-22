@@ -19,8 +19,6 @@ import { useBeanState } from "rx-nested-bean";
 import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
 
 // 动态导入非首屏组件
-const SettingsDialog = React.lazy(() => import("@/components/settings/settings-dialog").then(module => ({ default: module.SettingsDialog })));
-const AddAgentDialog = React.lazy(() => import("@/components/agent/add-agent-dialog").then(module => ({ default: module.AddAgentDialog })));
 const MobileMemberDrawer = React.lazy(() => import("@/components/discussion/member/mobile-member-drawer").then(module => ({ default: module.MobileMemberDrawer })));
 
 export function App() {
@@ -31,8 +29,6 @@ export function App() {
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showMembers, setShowMembers] = useState(true);
   const [showMobileMembers, setShowMobileMembers] = useState(false);
-  const [showMobileAgentsDialog, setShowMobileAgentsDialog] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const { isDesktop } = useBreakpointContext();
   const { data: currentDiscussionId } = useBeanState(
     discussionControlService.currentDiscussionIdBean
@@ -96,8 +92,6 @@ export function App() {
         onToggleSidebar={() => setShowMobileSidebar(true)}
         isDarkMode={isDarkMode}
         onThemeToggle={toggleDarkMode}
-        onShowAgentManagementPanel={() => setShowMobileAgentsDialog(true)}
-        onShowSettings={() => setShowSettings(true)}
         className="lg:hidden flex-none"
       />
 
@@ -173,11 +167,6 @@ export function App() {
             open={showMobileMembers}
             onOpenChange={setShowMobileMembers}
           />
-          <AddAgentDialog
-            isOpen={showMobileAgentsDialog}
-            onOpenChange={setShowMobileAgentsDialog}
-          />
-          <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
         </React.Suspense>
       </div>
     </div>
