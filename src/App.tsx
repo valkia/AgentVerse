@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { useBeanState } from "rx-nested-bean";
 import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
 import React from "react";
+import { ViewportProvider } from "@/lib/viewport-height";
 
 // 动态导入非首屏组件
 const SettingsDialog = React.lazy(() => import("@/components/settings/settings-dialog").then(module => ({ default: module.SettingsDialog })));
@@ -97,7 +98,7 @@ export function App() {
         onThemeToggle={toggleDarkMode}
         onShowAgentManagementPanel={() => setShowMobileAgentsDialog(true)}
         onShowSettings={() => setShowSettings(true)}
-        className="lg:hidden"
+        className="lg:hidden flex-none"
       />
 
       <div className="flex-1 flex min-h-0">
@@ -108,14 +109,12 @@ export function App() {
         ) : (
           <>
             <div className="flex-1 flex flex-col min-w-0">
-              <div className="flex-none p-4 border-b">
-                <DiscussionController
-                  status={status}
-                  onSendMessage={addMessage}
-                  onToggleMembers={handleToggleMembers}
-                  enableSettings={false}
-                />
-              </div>
+              <DiscussionController
+                status={status}
+                onSendMessage={addMessage}
+                onToggleMembers={handleToggleMembers}
+                enableSettings={false}
+              />
               <div className="flex-1 min-h-0">
                 <ChatArea
                   key={currentDiscussionId}
@@ -128,7 +127,6 @@ export function App() {
                       handleStatusChange("active");
                     }
                   }}
-                  className="h-full"
                 />
               </div>
             </div>
@@ -150,36 +148,46 @@ export function App() {
   );
 
   return (
-    <div className={cn(rootClassName)} data-testid="app-root">
-      {/* PC端顶部Header */}
-      <Header
-        isDarkMode={isDarkMode}
-        toggleDarkMode={toggleDarkMode}
-        status={status}
-        className="hidden lg:flex"
-      />
+    <ViewportProvider
+      enableKeyboardAdapter
+      enableDvhFallback
+      onHeightChange={(height) => {
+        console.log('Viewport height changed:', height);
+      }}
+    >
+      <div data-viewport-height data-testid="app-root" className={rootClassName}>
+        <div data-viewport-scroll className="flex flex-col h-full">
+          {/* PC端顶部Header */}
+          <Header
+            isDarkMode={isDarkMode}
+            toggleDarkMode={toggleDarkMode}
+            status={status}
+            className="hidden lg:flex flex-none"
+          />
 
-      <div className="flex-1 min-h-0">
-        <ResponsiveContainer
-          sidebarContent={sidebarContent}
-          mainContent={mainContent}
-          showMobileSidebar={showMobileSidebar}
-          onMobileSidebarChange={setShowMobileSidebar}
-        />
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer
+              sidebarContent={sidebarContent}
+              mainContent={mainContent}
+              showMobileSidebar={showMobileSidebar}
+              onMobileSidebarChange={setShowMobileSidebar}
+            />
+          </div>
+
+          {/* 移动端成员管理抽屉 */}
+          <React.Suspense>
+            <MobileMemberDrawer
+              open={showMobileMembers}
+              onOpenChange={setShowMobileMembers}
+            />
+            <AddAgentDialog
+              isOpen={showMobileAgentsDialog}
+              onOpenChange={setShowMobileAgentsDialog}
+            />
+            <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
+          </React.Suspense>
+        </div>
       </div>
-
-      {/* 移动端成员管理抽屉 */}
-      <React.Suspense>
-        <MobileMemberDrawer
-          open={showMobileMembers}
-          onOpenChange={setShowMobileMembers}
-        />
-        <AddAgentDialog
-          isOpen={showMobileAgentsDialog}
-          onOpenChange={setShowMobileAgentsDialog}
-        />
-        <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
-      </React.Suspense>
-    </div>
+    </ViewportProvider>
   );
 }

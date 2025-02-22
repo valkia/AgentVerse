@@ -22,14 +22,6 @@ interface ChatAreaProps {
   onStartDiscussion?: () => void;
 }
 
-const defaultClasses = {
-  root: "flex flex-col min-h-0 overflow-hidden h-full",
-  messageList: "flex-1 min-h-0 overflow-auto px-4",
-  inputArea:
-    "flex-none border-t dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur supports-[backdrop-filter]:bg-gray-50/60",
-  inputWrapper: "p-4",
-} as const;
-
 export function ChatArea({
   messages,
   onSendMessage,
@@ -51,7 +43,6 @@ export function ChatArea({
     messageListRef.current?.scrollToBottom();
   };
 
-  // 创建一个 agent 信息获取器对象，避免传递多个函数
   const agentInfoGetter = {
     getName: getAgentName,
     getAvatar: getAgentAvatar,
@@ -59,15 +50,19 @@ export function ChatArea({
 
   if (!currentDiscussion) {
     return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground">
+      <div className="h-full flex items-center justify-center text-muted-foreground">
         请选择或创建一个会话
       </div>
     );
   }
 
   return (
-    <div className={cn("flex flex-col flex-1 overflow-hidden h-full", className)}>
-      <div className="flex-1 min-h-0 relative">
+    <div className={cn("h-full flex flex-col", className)}>
+      {/* 消息列表区域 - 可滚动区域 */}
+      <div className={cn(
+        "flex-1 min-h-0 overflow-y-auto pl-4 relative",
+        messageListClassName
+      )}>
         <AnimatePresence mode="wait">
           {messages.length === 0 ? (
             <motion.div
@@ -75,7 +70,7 @@ export function ChatArea({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 overflow-auto"
+              className="py-4 pr-4"
             >
               <ChatEmptyGuide
                 scenarios={DEFAULT_SCENARIOS}
@@ -91,37 +86,26 @@ export function ChatArea({
               ref={messageListRef}
               messages={messages}
               agentInfo={agentInfoGetter}
-              className={cn(defaultClasses.messageList, messageListClassName)}
               data-testid="chat-message-list"
+              className="py-4 pr-4"
             />
           )}
         </AnimatePresence>
       </div>
 
-      <div
-        className={cn(
-          "flex-none border-t dark:border-gray-700",
-          "relative",
-          inputAreaClassName
-        )}
-        data-testid="chat-input-area"
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-background/60 to-background/95 dark:from-gray-900/60 dark:to-gray-900/95 pointer-events-none" />
-        
-        <div className="absolute inset-0 backdrop-blur-sm pointer-events-none" />
-
-        <div className="relative">
-          <MessageInput
-            ref={messageInputRef}
-            isFirstMessage={isFirstMessage}
-            onSendMessage={handleSendMessage}
-            className={cn(
-              defaultClasses.inputWrapper,
-              "bg-gray-50/80 dark:bg-gray-800/80"
-            )}
-            data-testid="chat-message-input"
-          />
-        </div>
+      {/* 输入框区域 - 固定在底部 */}
+      <div className={cn(
+        "flex-none border-t dark:border-gray-700 shadow-sm",
+        "bg-background/95 backdrop-blur-sm",
+        inputAreaClassName
+      )}>
+        <MessageInput
+          ref={messageInputRef}
+          isFirstMessage={isFirstMessage}
+          onSendMessage={handleSendMessage}
+          data-testid="chat-message-input"
+          className="px-4"
+        />
       </div>
     </div>
   );
