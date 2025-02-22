@@ -17,6 +17,7 @@ import { Discussion, NormalMessage } from "@/types/discussion";
 import React, { useEffect, useState } from "react";
 import { useBeanState } from "rx-nested-bean";
 import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
+import { ModalProvider } from "@/components/ui/modal";
 
 // 动态导入非首屏组件
 const MobileMemberDrawer = React.lazy(() => import("@/components/discussion/member/mobile-member-drawer").then(module => ({ default: module.MobileMemberDrawer })));
@@ -142,33 +143,35 @@ export function App() {
   );
 
   return (
-    <div className="fixed inset-0 flex flex-col" style={{ height }}>
-      <div className={cn(rootClassName, "flex flex-col h-full")}>
-        {/* PC端顶部Header */}
-        <Header
-          isDarkMode={isDarkMode}
-          toggleDarkMode={toggleDarkMode}
-          status={status}
-          className="hidden lg:flex flex-none"
-        />
-
-        <div className="flex-1 min-h-0">
-          <ResponsiveContainer
-            sidebarContent={sidebarContent}
-            mainContent={mainContent}
-            showMobileSidebar={showMobileSidebar}
-            onMobileSidebarChange={setShowMobileSidebar}
+    <ModalProvider> 
+      <div className="fixed inset-0 flex flex-col" style={{ height }}>
+        <div className={cn(rootClassName, "flex flex-col h-full")}>
+          {/* PC端顶部Header */}
+          <Header
+            isDarkMode={isDarkMode}
+            toggleDarkMode={toggleDarkMode}
+            status={status}
+            className="hidden lg:flex flex-none"
           />
+
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer
+              sidebarContent={sidebarContent}
+              mainContent={mainContent}
+              showMobileSidebar={showMobileSidebar}
+              onMobileSidebarChange={setShowMobileSidebar}
+            />
+          </div>
+
+          {/* 移动端成员管理抽屉 */}
+          <React.Suspense>
+            <MobileMemberDrawer
+              open={showMobileMembers}
+              onOpenChange={setShowMobileMembers}
+            />
+          </React.Suspense>
         </div>
-
-        {/* 移动端成员管理抽屉 */}
-        <React.Suspense>
-          <MobileMemberDrawer
-            open={showMobileMembers}
-            onOpenChange={setShowMobileMembers}
-          />
-        </React.Suspense>
       </div>
-    </div>
+    </ModalProvider>
   );
 }
