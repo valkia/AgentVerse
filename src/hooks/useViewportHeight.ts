@@ -43,7 +43,7 @@ export function useViewportHeight(): ViewportState {
       return () => window.removeEventListener('resize', updateViewportState);
     }
 
-    let cleanup: (() => void)[] = [];
+    const cleanup: (() => void)[] = [];
 
     if (window.visualViewport) {
       const handleViewportChange = () => {

@@ -47,6 +47,9 @@ export function useAgents({ onChange }: UseAgentsProps = {}) {
   });
 
   const getAgentName = useMemoizedFn((id: string) => {
+    if(id==="user"){
+      return "我";
+    }
     return agents.find((agent) => agent.id === id)?.name ?? "未知";
   });
 
