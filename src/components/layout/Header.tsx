@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Moon, Search, Settings, Sun, Users } from "lucide-react";
+import { Moon, Settings, Sun, Users } from "lucide-react";
 import { useState } from "react";
 import React from "react";
 
@@ -58,39 +58,32 @@ export function Header({
               {statusText}
             </span>
             <div className="flex items-center gap-1.5">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-9 w-9 hover:bg-muted/80"
-              >
-                <Search className="h-[1.2rem] w-[1.2rem] text-muted-foreground/70" />
-              </Button>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="icon"
-                className="h-9 w-9 hover:bg-muted/80"
+                className="h-9 w-9  hover:bg-muted/80"
                 onClick={() => setShowSettings(true)}
               >
-                <Settings className="h-[1.2rem] w-[1.2rem] text-muted-foreground/70" />
+                <Settings className="h-[1.2rem] w-[1.2rem]" />
               </Button>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="icon"
                 onClick={() => setShowAgentManager(true)}
                 className="h-9 w-9 hover:bg-muted/80"
               >
-                <Users className="h-[1.2rem] w-[1.2rem] text-muted-foreground/70" />
+                <Users className="h-[1.2rem] w-[1.2rem]" />
               </Button>
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="icon"
                 onClick={toggleDarkMode}
                 className="h-9 w-9 hover:bg-muted/80"
               >
                 {isDarkMode ? (
-                  <Sun className="h-[1.2rem] w-[1.2rem] text-muted-foreground/70" />
+                  <Sun className="h-[1.2rem] w-[1.2rem]" />
                 ) : (
-                  <Moon className="h-[1.2rem] w-[1.2rem] text-muted-foreground/70" />
+                  <Moon className="h-[1.2rem] w-[1.2rem]" />
                 )}
               </Button>
             </div>

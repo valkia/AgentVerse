@@ -1,11 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
-import { useAgents } from "@/hooks/useAgents";
-import { useMemberSelection } from "@/hooks/useMemberSelection";
 import { cn } from "@/lib/utils";
 import { Loader2, Send } from "lucide-react";
 import { useRef, useState, forwardRef, useImperativeHandle } from "react";
-import { MemberSelector } from "./member-selector";
 
 export interface MessageInputRef {
   setValue: (value: string) => void;
@@ -20,15 +17,6 @@ interface MessageInputProps {
 
 export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
   function MessageInput({ onSendMessage, className, isFirstMessage = false }, ref) {
-    const { agents, getAgentName } = useAgents();
-    const {
-      selectedMemberId,
-      setSelectedMemberId,
-      selectedAgent,
-      availableMembers,
-      isSelectDisabled
-    } = useMemberSelection(isFirstMessage);
-
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -51,7 +39,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
 
       try {
         setIsLoading(true);
-        await onSendMessage(input.trim(), selectedMemberId === 'self' ? 'user' : selectedAgent?.id || '');
+        await onSendMessage(input.trim(), 'user');
         setInput("");
         inputRef.current?.focus();
       } finally {
@@ -59,28 +47,14 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       }
     };
 
-    const canSubmit = Boolean((selectedAgent || selectedMemberId === 'self') && input.trim() && !isLoading);
+    const canSubmit = Boolean(input.trim() && !isLoading);
     const inputPlaceholder = isFirstMessage
       ? "请输入讨论主题，主持人将开启讨论..."
-      : selectedMemberId === 'self'
-      ? "以我的身份发送消息... (Cmd/Ctrl + Enter 发送，Shift + Enter 换行)"
-      : selectedAgent
-      ? `以 ${getAgentName(selectedAgent.id)} 的身份发送消息... (Cmd/Ctrl + Enter 发送，Shift + Enter 换行)`
-      : "请先选择发送者...";
+      : "发送消息... (Enter 发送，Shift/Cmd/Ctrl + Enter 换行)";
 
     return (
       <div className={cn(className)}>
         <div className="p-4 space-y-3">
-          <MemberSelector
-            selectedMemberId={selectedMemberId}
-            setSelectedMemberId={setSelectedMemberId}
-            selectedAgent={selectedAgent || undefined}
-            availableMembers={availableMembers}
-            agents={agents}
-            isLoading={isLoading}
-            isSelectDisabled={isSelectDisabled}
-          />
-
           <form onSubmit={handleSubmit} className="flex gap-2">
             <AutoResizeTextarea
               ref={inputRef}
@@ -88,18 +62,18 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  if (e.shiftKey) {
-                    // Shift + Enter: 插入换行
+                  // 如果按下了任何修饰键，允许换行
+                  if (e.shiftKey || e.metaKey || e.ctrlKey) {
                     return;
                   }
-                  // 普通回车或 Cmd/Ctrl + Enter: 提交
+                  // 单纯的 Enter 键，发送消息
                   e.preventDefault();
                   handleSubmit(e);
                 }
               }}
               placeholder={inputPlaceholder}
               className="flex-1 min-h-[2.25rem] text-sm"
-              disabled={!selectedMemberId || isLoading}
+              disabled={isLoading}
               minRows={1}
               maxRows={8}
             />
