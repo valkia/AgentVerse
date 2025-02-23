@@ -7,6 +7,8 @@ export interface ModalOptions {
   afterClose?: () => void;
   okText?: string;
   cancelText?: string;
+  className?: string;
+  showFooter?: boolean;
 }
 
 export interface ModalState {

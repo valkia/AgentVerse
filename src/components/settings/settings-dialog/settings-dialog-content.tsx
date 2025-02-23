@@ -1,6 +1,6 @@
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { SettingsPanel } from "./settings-panel";
-import { Button } from "../ui/button";
+import { DialogTitle } from "@/components/ui/dialog";
+import { SettingsPanel } from "../settings-panel";
+import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
 import { 
   AlertDialog,
@@ -11,16 +11,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../ui/alert-dialog";
+} from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { recoverDefaultSettings, settingsResource } from "@/resources/settings.resource";
 
-interface SettingsDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+export function SettingsDialogContent() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const handleReset = async () => {
@@ -31,28 +26,24 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl h-[80vh]">
-          <DialogTitle
-            className="flex items-center justify-between pr-12"
-            style={{
-              marginTop: "-30px",
-            }}
-          >
-            <span className="text-lg font-medium">设置</span>{" "}
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setShowResetConfirm(true)}
-              className="text-muted-foreground text-xs hover:text-primary flex items-center gap-2 mr-3"
-            >
-              <RotateCcw className="h-3 w-3" />
-              恢复默认配置
-            </Button>
-          </DialogTitle>
-          <SettingsPanel />
-        </DialogContent>
-      </Dialog>
+      <DialogTitle
+        className="flex items-center justify-between pr-12"
+        style={{
+          marginTop: "-30px",
+        }}
+      >
+        <span className="text-lg font-medium">设置</span>{" "}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setShowResetConfirm(true)}
+          className="text-muted-foreground text-xs hover:text-primary flex items-center gap-2 mr-3"
+        >
+          <RotateCcw className="h-3 w-3" />
+          恢复默认配置
+        </Button>
+      </DialogTitle>
+      <SettingsPanel />
 
       <AlertDialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
         <AlertDialogContent>
@@ -70,4 +61,4 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       </AlertDialog>
     </>
   );
-}
+} 

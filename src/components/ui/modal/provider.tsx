@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ModalContext } from "./context";
 import { ModalOptions, ModalState } from "./types";
+import { cn } from "@/lib/utils";
 
 export function ModalProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<ModalState>({
@@ -63,7 +64,7 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
     <ModalContext.Provider value={{ show, confirm, close }}>
       {children}
       <Dialog open={state.isOpen} onOpenChange={open => !open && handleCancel()}>
-        <DialogContent>
+        <DialogContent className={cn(state.options.className)}>
           {state.options.title && (
             <DialogHeader>
               <DialogTitle>{state.options.title}</DialogTitle>
@@ -75,14 +76,16 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
 
           {state.options.content}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCancel}>
-              {state.options.cancelText ?? '取消'}
-            </Button>
-            <Button onClick={handleOk}>
-              {state.options.okText ?? '确认'}
-            </Button>
-          </DialogFooter>
+          {state.options.showFooter !== false && (
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancel}>
+                {state.options.cancelText ?? '取消'}
+              </Button>
+              <Button onClick={handleOk}>
+                {state.options.okText ?? '确认'}
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </ModalContext.Provider>

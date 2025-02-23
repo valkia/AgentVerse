@@ -2,14 +2,14 @@ import { ChatArea } from "@/components/chat/chat-area";
 import { DiscussionController } from "@/components/discussion/control/discussion-controller";
 import { DiscussionList } from "@/components/discussion/discussion-list";
 import { MemberList } from "@/components/discussion/member/member-list";
-import { Header } from "@/components/layout/header";
+import { ActivityBar } from "@/components/layout/activity-bar";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { ResponsiveContainer } from "@/components/layout/responsive-container";
 import { useBreakpointContext } from "@/contexts/breakpoint-context";
 import { useAgents } from "@/hooks/useAgents";
 import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
+import { useDiscussions } from "@/hooks/useDiscussions";
 import { useMessages } from "@/hooks/useMessages";
-import { useTheme } from "@/hooks/useTheme";
 import { useViewportHeight } from "@/hooks/useViewportHeight";
 import { cn } from "@/lib/utils";
 import { discussionControlService } from "@/services/discussion-control.service";
@@ -18,15 +18,18 @@ import React, { useEffect, useState } from "react";
 import { useBeanState } from "rx-nested-bean";
 import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
 import { ModalProvider } from "@/components/ui/modal";
+import { ThemeProvider, useTheme } from "@/components/common/theme";
+import { useSettingsDialog } from "@/components/settings/settings-dialog";
 
 // 动态导入非首屏组件
 const MobileMemberDrawer = React.lazy(() => import("@/components/discussion/member/mobile-member-drawer").then(module => ({ default: module.MobileMemberDrawer })));
 
-export function App() {
-  const { isDarkMode, toggleDarkMode, rootClassName } = useTheme();
+function AppContent() {
+  const { rootClassName } = useTheme();
   const { getAgentName, getAgentAvatar } = useAgents();
   const { messages, addMessage } = useMessages();
   const { members } = useDiscussionMembers();
+  const { currentDiscussion, clearMessages } = useDiscussions();
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showMembers, setShowMembers] = useState(true);
   const [showMobileMembers, setShowMobileMembers] = useState(false);
@@ -39,9 +42,10 @@ export function App() {
   );
   const status = isPaused ? "paused" : "active";
   const { height } = useViewportHeight();
+  const { openSettingsDialog } = useSettingsDialog();
 
   const handleStatusChange = (status: Discussion["status"]) => {
-    setIsPaused(status === "active");
+    setIsPaused(status === "paused");
   };
 
   const handleToggleMembers = () => {
@@ -91,9 +95,19 @@ export function App() {
     <div className="flex flex-col h-full">
       <MobileHeader
         onToggleSidebar={() => setShowMobileSidebar(true)}
-        isDarkMode={isDarkMode}
-        onThemeToggle={toggleDarkMode}
         className="lg:hidden flex-none"
+        title={currentDiscussion?.title || "讨论系统"}
+        status={status}
+        onStatusChange={handleStatusChange}
+        onManageMembers={handleToggleMembers}
+        onOpenSettings={() => {
+          openSettingsDialog();
+        }}
+        onClearMessages={() => {
+          if (currentDiscussion) {
+            clearMessages(currentDiscussion.id);
+          }
+        }}
       />
 
       <div className="flex-1 flex min-h-0">
@@ -104,12 +118,15 @@ export function App() {
         ) : (
           <>
             <div className="flex-1 flex flex-col min-w-0">
-              <DiscussionController
-                status={status}
-                onSendMessage={addMessage}
-                onToggleMembers={handleToggleMembers}
-                enableSettings={false}
-              />
+              {/* 只在PC端显示DiscussionController */}
+              <div className="hidden lg:block">
+                <DiscussionController
+                  status={status}
+                  onSendMessage={addMessage}
+                  onToggleMembers={handleToggleMembers}
+                  enableSettings={false}
+                />
+              </div>
               <div className="flex-1 min-h-0">
                 <ChatArea
                   key={currentDiscussionId}
@@ -143,18 +160,16 @@ export function App() {
   );
 
   return (
-    <ModalProvider> 
-      <div className="fixed inset-0 flex flex-col" style={{ height }}>
-        <div className={cn(rootClassName, "flex flex-col h-full")}>
-          {/* PC端顶部Header */}
-          <Header
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-            status={status}
-            className="hidden lg:flex flex-none"
+    <div className="fixed inset-0 flex flex-col" style={{ height }}>
+      <div className={cn(rootClassName, "flex flex-col h-full")}>
+        <div className="flex-1 min-h-0 flex">
+          {/* ActivityBar */}
+          <ActivityBar 
+            className="hidden lg:flex"
           />
 
-          <div className="flex-1 min-h-0">
+          {/* 主要内容区域 */}
+          <div className="flex-1">
             <ResponsiveContainer
               sidebarContent={sidebarContent}
               mainContent={mainContent}
@@ -162,16 +177,26 @@ export function App() {
               onMobileSidebarChange={setShowMobileSidebar}
             />
           </div>
-
-          {/* 移动端成员管理抽屉 */}
-          <React.Suspense>
-            <MobileMemberDrawer
-              open={showMobileMembers}
-              onOpenChange={setShowMobileMembers}
-            />
-          </React.Suspense>
         </div>
+
+        {/* 移动端成员管理抽屉 */}
+        <React.Suspense>
+          <MobileMemberDrawer
+            open={showMobileMembers}
+            onOpenChange={setShowMobileMembers}
+          />
+        </React.Suspense>
       </div>
-    </ModalProvider>
+    </div>
+  );
+}
+
+export function App() {
+  return (
+    <ThemeProvider>
+      <ModalProvider>
+        <AppContent />
+      </ModalProvider>
+    </ThemeProvider>
   );
 }
