@@ -10,6 +10,7 @@ import { ChatEmptyGuide } from "./chat-empty-guide";
 import { MessageList, MessageListRef } from "./message";
 import { MessageInput, MessageInputRef } from "./message-input";
 import { useViewportHeight } from "@/hooks/useViewportHeight";
+import { DiscussionSetupContainer } from "@/components/discussion/setup/discussion-setup-container";
 
 interface ChatAreaProps {
   messages: AgentMessage[];
@@ -56,6 +57,11 @@ export function ChatArea({
         请选择或创建一个会话
       </div>
     );
+  }
+
+  // 如果没有成员且没有消息，显示设置页面
+  if (members.length === 0 && messages.length === 0) {
+    return <DiscussionSetupContainer />;
   }
 
   return (
