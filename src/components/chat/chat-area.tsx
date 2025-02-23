@@ -85,6 +85,7 @@ export function ChatArea({
             </motion.div>
           ) : (
             <MessageList
+              discussionId={currentDiscussion.id}
               ref={messageListRef}
               messages={messages}
               agentInfo={agentInfoGetter}
