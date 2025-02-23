@@ -41,7 +41,9 @@ export class MessageService {
   }
 
   async updateMessage(id: string, data: Partial<AgentMessage>): Promise<AgentMessage> {
-    return this.provider.update(id, data);
+    const updatedMessage = await this.provider.update(id, data);
+    await discussionService.updateLastMessage(updatedMessage.discussionId, updatedMessage);
+    return updatedMessage;
   }
 
   async deleteMessage(id: string): Promise<void> {

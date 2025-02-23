@@ -36,7 +36,7 @@ export function MobileHeader({
     <>
       <header 
         className={cn(
-          "h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden",
+          "h-14 max-w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden",
           className
         )}
       >
@@ -44,19 +44,21 @@ export function MobileHeader({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 shrink-0"
             onClick={onToggleSidebar}
           >
             <Menu className="h-5 w-5" />
           </Button>
           
-          <h1 className="text-lg font-medium flex-1">{title}</h1>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-medium truncate">{title}</h1>
+          </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               variant={isActive ? "destructive" : "default"}
               size="icon"
-              className="h-8 w-8 shrink-0"
+              className="h-8 w-8"
               onClick={handleStatusChange}
             >
               {isActive ? (

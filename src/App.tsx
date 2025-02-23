@@ -169,13 +169,15 @@ function AppContent() {
           />
 
           {/* 主要内容区域 */}
-          <div className="flex-1">
-            <ResponsiveContainer
-              sidebarContent={sidebarContent}
-              mainContent={mainContent}
-              showMobileSidebar={showMobileSidebar}
-              onMobileSidebarChange={setShowMobileSidebar}
-            />
+          <div className="flex-1 flex justify-center w-full">
+            <div className="w-full max-w-[1600px]">
+              <ResponsiveContainer
+                sidebarContent={sidebarContent}
+                mainContent={mainContent}
+                showMobileSidebar={showMobileSidebar}
+                onMobileSidebarChange={setShowMobileSidebar}
+              />
+            </div>
           </div>
         </div>
 
