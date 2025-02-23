@@ -36,7 +36,7 @@ function AppContent() {
   const { getAgentName, getAgentAvatar } = useAgents();
   const { messages, addMessage } = useMessages();
   const { currentDiscussion, clearMessages } = useDiscussions();
-  const [currentScene, setCurrentScene] = useState<Scene>("discussions");
+  const [currentScene, setCurrentScene] = useState<Scene>("chat");
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showMembersForDesktop, setShowMembersForDesktop] = usePersistedState(
     false,
@@ -156,7 +156,9 @@ function AppContent() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium">深色模式</div>
-                        <div className="text-sm text-muted-foreground">切换深色/浅色主题</div>
+                        <div className="text-sm text-muted-foreground">
+                          切换深色/浅色主题
+                        </div>
                       </div>
                       <ThemeToggle />
                     </div>
@@ -180,14 +182,18 @@ function AppContent() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium">自动滚动</div>
-                        <div className="text-sm text-muted-foreground">新消息时自动滚动到底部</div>
+                        <div className="text-sm text-muted-foreground">
+                          新消息时自动滚动到底部
+                        </div>
                       </div>
                       <Switch />
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium">自动标题</div>
-                        <div className="text-sm text-muted-foreground">根据首条消息自动设置讨论标题</div>
+                        <div className="text-sm text-muted-foreground">
+                          根据首条消息自动设置讨论标题
+                        </div>
                       </div>
                       <Switch />
                     </div>
@@ -201,7 +207,9 @@ function AppContent() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium">版本</div>
-                        <div className="text-sm text-muted-foreground">当前版本 1.0.0</div>
+                        <div className="text-sm text-muted-foreground">
+                          当前版本 1.0.0
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -236,7 +244,9 @@ function AppContent() {
                 <ResponsiveContainer
                   sidebarContent={
                     <div className="h-full bg-card">
-                      <DiscussionList onSelectDiscussion={handleSelectDiscussion} />
+                      <DiscussionList
+                        onSelectDiscussion={handleSelectDiscussion}
+                      />
                     </div>
                   }
                   mainContent={
