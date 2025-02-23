@@ -15,6 +15,7 @@ export function useViewportHeight(): ViewportState {
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isAndroid = /Android/i.test(navigator.userAgent);
   
   const getVisibleHeight = useCallback((): number => {
     if (window.visualViewport) {
@@ -24,18 +25,43 @@ export function useViewportHeight(): ViewportState {
   }, []);
 
   const updateViewportState = useCallback(() => {
+    if (!isMobile) {
+      setState({
+        height: window.innerHeight,
+        isKeyboardVisible: false,
+        keyboardHeight: 0
+      });
+      return;
+    }
+
     const currentHeight = getVisibleHeight();
     const maxHeight = Math.max(window.innerHeight, currentHeight);
     const heightDiff = maxHeight - currentHeight;
-    const keyboardThreshold = maxHeight * 0.15;
+    
+    // 调整键盘检测阈值
+    const keyboardThreshold = isAndroid ? maxHeight * 0.15 : maxHeight * 0.25;
     const isKeyboardVisible = heightDiff > keyboardThreshold;
+
+    // 防止 Android Chrome 软键盘收起时的抽屉问题
+    if (isAndroid && !isKeyboardVisible) {
+      document.documentElement.style.height = '100%';
+      document.body.style.height = '100%';
+      document.body.style.minHeight = '100%';
+      
+      // 强制重排
+      requestAnimationFrame(() => {
+        document.documentElement.style.height = '';
+        document.body.style.height = '';
+        document.body.style.minHeight = '';
+      });
+    }
 
     setState({
       height: currentHeight,
       isKeyboardVisible,
       keyboardHeight: isKeyboardVisible ? heightDiff : 0
     });
-  }, [getVisibleHeight]);
+  }, [getVisibleHeight, isAndroid, isMobile]);
 
   useEffect(() => {
     if (!isMobile) {
