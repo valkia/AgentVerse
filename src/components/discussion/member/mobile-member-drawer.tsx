@@ -13,12 +13,10 @@ export function MobileMemberDrawer({
   return (
     <Sheet
       open={open}
-      onOpenChange={(v) => {
-        onOpenChange(v);
-      }}
+      onOpenChange={onOpenChange}
     >
       <SheetContent side="right" className="w-full sm:w-[400px] p-0">
-        <MobileMemberList />
+        <MobileMemberList onClose={() => onOpenChange(false)} />
       </SheetContent>
     </Sheet>
   );

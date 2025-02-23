@@ -12,6 +12,8 @@ import { MemberToggleButton } from "../member/member-toggle-button";
 import { DiscussionSettingsButton } from "../settings/discussion-settings-button";
 import { DiscussionSettingsPanel } from "../settings/discussion-settings-panel";
 import { useDiscussionControl } from "./use-discussion-control";
+import { UI_PERSIST_KEYS, createUIPersistOptions } from "@/config/ui-persist";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 // 控制按钮组件
 function ControlButton({ isActive, onClick }: { isActive: boolean; onClick: () => void }) {
@@ -155,14 +157,18 @@ export function DiscussionController({
   enableSettings = true,
 }: DiscussionControllerProps) {
   const {
-    showSettings,
-    setShowSettings,
     settings,
     setSettings,
     indicators,
     messageCount,
     handleStatusChange,
   } = useDiscussionControl({ status, onSendMessage });
+
+  // 直接使用 usePersistedState，配合工具函数
+  const [showSettings, setShowSettings] = usePersistedState(
+    false,
+    createUIPersistOptions(UI_PERSIST_KEYS.DISCUSSION.SETTINGS_PANEL_VISIBLE)
+  );
 
   const { members } = useDiscussionMembers();
   const isActive = status === "active";

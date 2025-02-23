@@ -1,9 +1,13 @@
 import { ChatArea } from "@/components/chat/chat-area";
+import { ThemeProvider, useTheme } from "@/components/common/theme";
 import { DiscussionController } from "@/components/discussion/control/discussion-controller";
+import { DiscussionList } from "@/components/discussion/list/discussion-list";
 import { MemberList } from "@/components/discussion/member/member-list";
 import { ActivityBar } from "@/components/layout/activity-bar";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { ResponsiveContainer } from "@/components/layout/responsive-container";
+import { useSettingsDialog } from "@/components/settings/settings-dialog";
+import { ModalProvider } from "@/components/ui/modal";
 import { useBreakpointContext } from "@/contexts/breakpoint-context";
 import { useAgents } from "@/hooks/useAgents";
 import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
@@ -16,24 +20,33 @@ import { Discussion, NormalMessage } from "@/types/discussion";
 import React, { useEffect, useState } from "react";
 import { useBeanState } from "rx-nested-bean";
 import { DiscussionSetupPage } from "./components/discussion/setup/discussion-setup-page";
-import { ModalProvider } from "@/components/ui/modal";
-import { ThemeProvider, useTheme } from "@/components/common/theme";
-import { useSettingsDialog } from "@/components/settings/settings-dialog";
-import { DiscussionList } from "@/components/discussion/list/discussion-list";
+import { usePersistedState } from "@/hooks/usePersistedState";
+import { UI_PERSIST_KEYS } from "@/config/ui-persist";
 
 // 动态导入非首屏组件
-const MobileMemberDrawer = React.lazy(() => import("@/components/discussion/member/mobile-member-drawer").then(module => ({ default: module.MobileMemberDrawer })));
+const MobileMemberDrawer = React.lazy(() =>
+  import("@/components/discussion/member/mobile-member-drawer").then(
+    (module) => ({ default: module.MobileMemberDrawer })
+  )
+);
 
 function AppContent() {
+  const { isDesktop, isMobile } = useBreakpointContext();
   const { rootClassName } = useTheme();
   const { getAgentName, getAgentAvatar } = useAgents();
   const { messages, addMessage } = useMessages();
   const { members } = useDiscussionMembers();
   const { currentDiscussion, clearMessages } = useDiscussions();
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
-  const [showMembers, setShowMembers] = useState(true);
+  const [showMembersForDesktop, setShowMembersForDesktop] = usePersistedState(
+    false,
+    {
+      key: UI_PERSIST_KEYS.DISCUSSION.MEMBER_PANEL_VISIBLE,
+      version: 1,
+    }
+  );
+  const showDesktopMembers = isDesktop && showMembersForDesktop;
   const [showMobileMembers, setShowMobileMembers] = useState(false);
-  const { isDesktop } = useBreakpointContext();
   const { data: currentDiscussionId } = useBeanState(
     discussionControlService.currentDiscussionIdBean
   );
@@ -49,8 +62,8 @@ function AppContent() {
   };
 
   const handleToggleMembers = () => {
-    if (window.innerWidth >= 1024) {
-      setShowMembers(!showMembers);
+    if (!isMobile) {
+      setShowMembersForDesktop(!showMembersForDesktop);
     } else {
       setShowMobileMembers(true);
     }
@@ -146,7 +159,7 @@ function AppContent() {
             <div
               className={cn(
                 "w-80 flex-none border-l border-border bg-card hidden lg:block",
-                !showMembers && "lg:hidden"
+                !showDesktopMembers && "lg:hidden"
               )}
             >
               <div className="p-4 h-full">
@@ -164,9 +177,7 @@ function AppContent() {
       <div className={cn(rootClassName, "flex flex-col h-full")}>
         <div className="flex-1 min-h-0 flex">
           {/* ActivityBar */}
-          <ActivityBar 
-            className="hidden lg:flex"
-          />
+          <ActivityBar className="hidden lg:flex" />
 
           {/* 主要内容区域 */}
           <div className="flex-1 flex justify-center w-full">
