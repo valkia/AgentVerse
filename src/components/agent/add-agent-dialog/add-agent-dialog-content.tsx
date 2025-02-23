@@ -40,34 +40,39 @@ export function AddAgentDialogContent() {
   }, [agents, searchQuery]);
 
   return (
-    <>
-      <div className="flex items-center gap-4 mt-2 px-1">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-          <Input
-            placeholder="搜索 Agent..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9 bg-muted/20 border-border/50 focus:bg-background/60"
-          />
+    <div className="flex flex-col h-full">
+      {/* 固定的头部搜索区域 */}
+      <div className="flex-none border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex items-center gap-4 p-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+            <Input
+              placeholder="搜索 Agent..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 bg-muted/20 border-border/50 focus:bg-background/60"
+            />
+          </div>
+          <Button
+            onClick={addAgent}
+            variant="default"
+            size="sm"
+            disabled={isLoading}
+            className="h-9 px-4 shrink-0"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <PlusCircle className="w-4 h-4 mr-2" />
+            )}
+            添加 Agent
+          </Button>
         </div>
-        <Button
-          onClick={addAgent}
-          variant="default"
-          size="sm"
-          disabled={isLoading}
-          className="h-9 px-4 shrink-0"
-        >
-          {isLoading ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <PlusCircle className="w-4 h-4 mr-2" />
-          )}
-          添加 Agent
-        </Button>
       </div>
-      <div className="mt-6 flex-1 min-h-0 overflow-y-auto pr-6 -mr-6">
-        <div className="space-y-4 pb-6">
+
+      {/* 可滚动的内容区域 */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="p-4 space-y-4">
           <AgentList
             agents={filteredAgents}
             loading={isLoading}
@@ -76,12 +81,13 @@ export function AddAgentDialogContent() {
           />
         </div>
       </div>
+
       <AgentForm
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         onSubmit={handleSubmit}
         initialData={editingAgent}
       />
-    </>
+    </div>
   );
 } 
