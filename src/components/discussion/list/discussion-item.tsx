@@ -9,40 +9,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAgents } from "@/hooks/useAgents";
 import { useDiscussionMembers } from "@/hooks/useDiscussionMembers";
-import { useDiscussions } from "@/hooks/useDiscussions";
 import { useModal } from "@/components/ui/modal";
 import { cn, formatTime } from "@/lib/utils";
-import { discussionsResource, messagesResource } from "@/resources";
-import { DEFAULT_DISCUSSION_TITLE } from "@/services/common.util";
-import { filterNormalMessages } from "@/services/message.util";
-import { Discussion } from "@/types/discussion";
-import { DiscussionMember } from "@/types/discussion-member";
-import {
-  Download,
-  Loader2,
-  MoreVertical,
-  Pencil,
-  PlusCircle,
-  Trash2,
-} from "lucide-react";
+import { Download, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { DiscussionItemProps } from "./types";
+import { DiscussionMember } from "@/types/discussion-member";
 
-interface DiscussionListProps {
-  className?: string;
-  headerClassName?: string;
-  listClassName?: string;
-  onSelectDiscussion?: (discussionId: string) => void;
-}
-
-interface DiscussionItemProps {
-  discussion: Discussion;
-  isActive: boolean;
-  onClick: () => void;
-  onRename: (title: string) => void;
-  onDelete: () => void;
-}
-
-function DiscussionItem({
+export function DiscussionItem({
   discussion,
   isActive,
   onClick,
@@ -229,116 +203,4 @@ function DiscussionItem({
       </div>
     </div>
   );
-}
-
-export function DiscussionList({
-  className,
-  headerClassName,
-  listClassName,
-  onSelectDiscussion,
-}: DiscussionListProps) {
-  const { agents } = useAgents();
-  const {
-    discussions,
-    currentDiscussion,
-    isLoading,
-    createDiscussion,
-    selectDiscussion,
-    updateDiscussion,
-    deleteDiscussion,
-  } = useDiscussions();
-
-  const handleCreateDiscussion = async () => {
-    if (agents.length === 0) return;
-    const discussion = await createDiscussion("新的讨论");
-    if (discussion) {
-      selectDiscussion(discussion.id);
-    }
-  };
-
-  useEffect(() => {
-    // 监听消息变化并更新标题
-    return messagesResource.current.subscribe(async (state) => {
-      if (state.data && !state.isValidating && !state.isLoading) {
-        const messages = filterNormalMessages(state.data);
-        if (messages.length) {
-          const discussion = discussionsResource.current.getState().data;
-          if (discussion && discussion.title === DEFAULT_DISCUSSION_TITLE) {
-            try {
-              // 使用 AIService 生成标题
-              updateDiscussion(messages[0].discussionId, {
-                title: messages[0].content.slice(0, 50),
-              });
-              // const newTitle = await aiService.generateDiscussionTitle(
-              //   messages
-              // );
-              // if (newTitle && newTitle !== discussion.title) {
-              //   updateDiscussion(discussion.id, { title: newTitle });
-              // }
-            } catch (error) {
-              console.error("Failed to generate discussion title:", error);
-            }
-          }
-        }
-      }
-    });
-  }, []);
-
-  const handleSelectDiscussion = (discussionId: string) => {
-    selectDiscussion(discussionId);
-    onSelectDiscussion?.(discussionId);
-  };
-
-  return (
-    <div
-      className={cn("flex flex-col flex-1 overflow-hidden h-full", className)}
-    >
-      <header
-        className={cn(
-          "flex-none flex justify-between items-center sticky top-0",
-          "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80",
-          "py-2 px-3 border-b border-border/40 z-10",
-          headerClassName
-        )}
-      >
-        <h2 className="text-sm font-medium text-foreground/90">会话列表</h2>
-        <Button
-          onClick={handleCreateDiscussion}
-          variant="outline"
-          size="sm"
-          disabled={isLoading || agents.length === 0}
-          className="h-6 px-2 text-xs hover:bg-muted/50"
-        >
-          {isLoading ? (
-            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-          ) : (
-            <PlusCircle className="w-3 h-3 mr-1" />
-          )}
-          新建会话
-        </Button>
-      </header>
-
-      <div
-        className={cn("flex-1 min-h-0 overflow-y-auto scrollbar-custom", listClassName)}
-      >
-        <div className="divide-y divide-border/[0.06]">
-          {discussions.map((discussion) => (
-            <DiscussionItem
-              key={discussion.id}
-              discussion={discussion}
-              isActive={discussion.id === currentDiscussion?.id}
-              onClick={() => handleSelectDiscussion(discussion.id)}
-              onRename={(title) => updateDiscussion(discussion.id, { title })}
-              onDelete={() => deleteDiscussion(discussion.id)}
-            />
-          ))}
-        </div>
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm">
-            <Loader2 className="w-6 h-6 animate-spin text-primary/60" />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+} 

@@ -1,6 +1,5 @@
 import { ChatArea } from "@/components/chat/chat-area";
 import { DiscussionController } from "@/components/discussion/control/discussion-controller";
-import { DiscussionList } from "@/components/discussion/discussion-list";
 import { MemberList } from "@/components/discussion/member/member-list";
 import { ActivityBar } from "@/components/layout/activity-bar";
 import { MobileHeader } from "@/components/layout/mobile-header";
@@ -20,6 +19,7 @@ import { DiscussionSetupPage } from "./components/discussion/setup/discussion-se
 import { ModalProvider } from "@/components/ui/modal";
 import { ThemeProvider, useTheme } from "@/components/common/theme";
 import { useSettingsDialog } from "@/components/settings/settings-dialog";
+import { DiscussionList } from "@/components/discussion/list/discussion-list";
 
 // 动态导入非首屏组件
 const MobileMemberDrawer = React.lazy(() => import("@/components/discussion/member/mobile-member-drawer").then(module => ({ default: module.MobileMemberDrawer })));
