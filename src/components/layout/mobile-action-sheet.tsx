@@ -1,6 +1,6 @@
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Users, Settings, Eraser, Moon, Sun, X } from "lucide-react";
+import { Settings, Eraser, Moon, Sun, X } from "lucide-react";
 import { useTheme } from "@/components/common/theme";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -10,14 +10,12 @@ import { useSettingsDialog } from "@/components/settings/settings-dialog";
 interface MobileActionSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onManageMembers: () => void;
   onClearMessages: () => void;
 }
 
 export function MobileActionSheet({
   open,
   onOpenChange,
-  onManageMembers,
   onClearMessages,
 }: MobileActionSheetProps) {
   const { isDarkMode, toggleDarkMode } = useTheme();
@@ -82,14 +80,6 @@ export function MobileActionSheet({
           </Button>
         </div>
         <div className="px-2 py-1">
-          <ActionItem
-            icon={Users}
-            label="成员管理"
-            onClick={() => {
-              onManageMembers();
-              onOpenChange(false);
-            }}
-          />
           <ActionItem
             icon={Settings}
             label="讨论设置"

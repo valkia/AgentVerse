@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/common/theme-toggle";
 import { DiscussionController } from "@/components/discussion/control/discussion-controller";
 import { DiscussionList } from "@/components/discussion/list/discussion-list";
 import { MemberList } from "@/components/discussion/member/member-list";
+import { MobileMemberDrawer } from "@/components/discussion/member/mobile-member-drawer";
 import { ActivityBar } from "@/components/layout/activity-bar";
 import { MobileBottomBar } from "@/components/layout/mobile-bottom-bar";
 import { MobileHeader } from "@/components/layout/mobile-header";
@@ -54,6 +55,7 @@ function AppContent() {
   const status = isPaused ? "paused" : "active";
   const { height } = useViewportHeight();
   const { openSettingsDialog } = useSettingsDialog();
+  const [showMobileMemberDrawer, setShowMobileMemberDrawer] = useState(false);
 
   // 处理场景切换
   useEffect(() => {
@@ -67,10 +69,10 @@ function AppContent() {
   };
 
   const handleToggleMembers = () => {
-    if (!isMobile) {
+    if (isDesktop) {
       setShowMembersForDesktop(!showMembersForDesktop);
     } else {
-      setCurrentScene("agents");
+      setShowMobileMemberDrawer(true);
     }
   };
 
@@ -279,6 +281,10 @@ function AppContent() {
     <div className="fixed inset-0 flex flex-col" style={{ height }}>
       <div className={cn(rootClassName, "flex flex-col h-full")}>
         {renderSceneContent()}
+        <MobileMemberDrawer
+          open={showMobileMemberDrawer}
+          onOpenChange={setShowMobileMemberDrawer}
+        />
       </div>
     </div>
   );
