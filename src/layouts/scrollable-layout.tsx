@@ -18,7 +18,7 @@ interface ScrollableLayoutProps {
 }
 
 export interface ScrollableLayoutRef {
-  scrollToBottom: () => void;
+  scrollToBottom: (instant?: boolean) => void;
 }
 
 export const ScrollableLayout = forwardRef<
@@ -45,10 +45,10 @@ export const ScrollableLayout = forwardRef<
     scrollToBottom,
   }));
 
-  // 初始化滚动位置
+  // 初始化滚动位置 - 使用 instant 模式
   useEffect(() => {
     if (initialAlignment === "bottom") {
-      scrollToBottom(true);
+      scrollToBottom(true); // 传入 true 使用 instant 模式
     }
   }, [initialAlignment, scrollToBottom]);
 
