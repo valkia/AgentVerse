@@ -153,7 +153,7 @@ export class DiscussionControlService {
     if (oldId !== id) {
       // 1. 先清理当前讨论的所有状态
       this.cleanupCurrentDiscussion();
-      
+
       // 2. 再设置新的讨论 ID
       this.currentDiscussionIdBean.set(id);
       this.onCurrentDiscussionIdChange$.next(id);
@@ -163,29 +163,29 @@ export class DiscussionControlService {
   private cleanupCurrentDiscussion() {
     // 1. 暂停当前讨论
     this.pause();
-    
+
     // 2. 清理所有指示器
     typingIndicatorService.clearAll();
-    
+
     // 3. 重置环境状态
     this.env.reset();
     this.env.speakScheduler.resetCounter();
-    
+
     // 4. 清理所有代理状态
     for (const agent of this.agents.values()) {
       agent.pause();
       // agent.resetState();
     }
-    
+
     // 5. 重置讨论相关状态
     this.currentRoundBean.set(0);
     this.currentSpeakerIndexBean.set(-1);
     this.isPausedBean.set(true);
-    
+
     // 6. 执行讨论级清理
-    this.discussionCleanupHandlers.forEach(cleanup => cleanup());
+    this.discussionCleanupHandlers.forEach((cleanup) => cleanup());
     this.discussionCleanupHandlers = [];
-    
+
     // 7. 清理运行时资源
     this.cleanupRuntime();
   }
@@ -443,6 +443,10 @@ export class DiscussionControlService {
       this.resume();
 
       // 3. 重放最后一条消息
+      console.log(
+        "[DiscussionControl] Resuming discussion with last message:",
+        lastMessage
+      );
       this.env.eventBus.emit(DiscussionKeys.Events.message, lastMessage);
     }
   }
@@ -480,6 +484,13 @@ export class DiscussionControlService {
         console.log("[DiscussionControl] Discussion is already running");
         return;
       }
+
+      console.log(
+        "[DiscussionControl] messagesBean.get()",
+        this.messagesBean.get(),
+        "membersBean.get()",
+        this.membersBean.get()
+      );
 
       // 2. 检查是否有历史消息和成员
       if (

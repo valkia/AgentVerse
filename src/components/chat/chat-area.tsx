@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { discussionControlService } from "@/services/discussion-control.service";
 import { AgentMessage } from "@/types/discussion";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { ChatEmptyGuide } from "./chat-empty-guide";
 import { MessageList, MessageListRef } from "./message";
 import { MessageInput, MessageInputRef } from "./message-input";
@@ -40,6 +40,10 @@ export function ChatArea({
   const { currentDiscussion } = useDiscussions();
   const { members } = useDiscussionMembers();
 
+  useEffect(() => {
+    discussionControlService.setMembers(members);
+  }, [members]);
+
   const handleSendMessage = async (content: string, agentId: string) => {
     await onSendMessage(content, agentId);
     discussionControlService.run();
@@ -67,10 +71,12 @@ export function ChatArea({
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* 消息列表区域 - 自动收缩区域 */}
-      <div className={cn(
-        "flex-1 min-h-0 overflow-y-auto pl-4 relative scrollbar-thin",
-        messageListClassName
-      )}>
+      <div
+        className={cn(
+          "flex-1 min-h-0 overflow-y-auto pl-4 relative scrollbar-thin",
+          messageListClassName
+        )}
+      >
         <AnimatePresence mode="wait">
           {messages.length === 0 ? (
             <motion.div
@@ -103,12 +109,14 @@ export function ChatArea({
       </div>
 
       {/* 输入框区域 */}
-      <div className={cn(
-        "flex-none border-t dark:border-gray-700",
-        "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80",
-        isKeyboardVisible && "shadow-lg",
-        inputAreaClassName
-      )}>
+      <div
+        className={cn(
+          "flex-none border-t dark:border-gray-700",
+          "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80",
+          isKeyboardVisible && "shadow-lg",
+          inputAreaClassName
+        )}
+      >
         <MessageInput
           ref={messageInputRef}
           isFirstMessage={isFirstMessage}
