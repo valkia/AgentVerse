@@ -28,3 +28,11 @@ tmp
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Clacky specific files
+.1024*
+!.1024
+.breakpoints
+
+# Package manager
+.pnpm-store
